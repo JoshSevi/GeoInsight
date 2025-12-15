@@ -1,101 +1,145 @@
 # GeoInsight
 
-A clean and simple project setup with React, Tailwind CSS, TypeScript, Node.js backend, and Supabase.
+A modern web application for IP geolocation tracking and management, built with React, Node.js, and Supabase.
 
-## Project Structure
+## 🚀 Overview
+
+GeoInsight is a full-stack application that allows users to:
+- Authenticate securely with email and password
+- View their current IP address and geolocation information
+- Search for geolocation data of any IP address
+- Track and manage search history
+
+## 📋 Features
+
+- **User Authentication** - Secure login with JWT tokens
+- **IP Geolocation** - Real-time geolocation data using IPInfo API
+- **Search History** - Track and manage IP search history
+- **Responsive Design** - Modern UI built with Tailwind CSS
+- **Type-Safe** - Full TypeScript implementation
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Vite** - Build tool and dev server
+
+### Backend
+- **Node.js** - Runtime
+- **Express** - Web framework
+- **TypeScript** - Type safety
+- **JWT** - Authentication
+- **bcryptjs** - Password hashing
+
+### Database & Services
+- **Supabase** - PostgreSQL database
+- **IPInfo API** - Geolocation services
+
+## 📁 Project Structure
 
 ```
 GeoInsight/
-├── frontend/              # React + TypeScript + Tailwind
-│   ├── src/
-│   │   ├── App.tsx        # Main app component
-│   │   ├── main.tsx       # Entry point
-│   │   ├── lib/
-│   │   │   └── supabase.ts # Supabase client
-│   │   └── index.css      # Tailwind styles
-│   ├── package.json
-│   └── vite.config.ts     # Vite configuration
-├── backend/               # Node.js + TypeScript + Express
-│   ├── src/
-│   │   └── index.ts       # Express server
-│   ├── package.json
-│   └── tsconfig.json
-└── package.json           # Root workspace configuration
+├── frontend/          # React frontend application
+│   ├── src/           # Source code
+│   ├── package.json   # Frontend dependencies
+│   └── README.md      # Frontend documentation
+├── backend/           # Node.js backend API
+│   ├── src/           # Source code
+│   ├── package.json   # Backend dependencies
+│   └── README.md      # Backend documentation
+└── package.json       # Root workspace configuration
 ```
 
-## Setup
+## 🚦 Quick Start
 
-### 1. Install Dependencies
+### Prerequisites
 
-```bash
-npm run install:all
-```
+- Node.js (v18 or higher)
+- npm or yarn
+- Supabase account
+- IPInfo API token (optional)
 
-This installs dependencies for the root workspace, frontend, and backend.
+### Installation
 
-### 2. Environment Variables
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd GeoInsight
+   ```
 
-Create `.env` files in both `frontend/` and `backend/` directories:
+2. **Install dependencies**
+   ```bash
+   npm run install:all
+   ```
 
-**frontend/.env:**
-```
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_API_URL=http://localhost:8000
-VITE_IPINFO_API_URL=https://ipinfo.io
-```
+3. **Set up environment variables**
 
-**backend/.env:**
-```
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-PORT=8000
-IPINFO_TOKEN=your_ipinfo_token
-```
+   Create `.env` files in both `frontend/` and `backend/` directories. See the respective README files for details:
+   - [Frontend Environment Variables](./frontend/README.md#environment-variables)
+   - [Backend Environment Variables](./backend/README.md#environment-variables)
 
-### 3. Run Development Servers
+4. **Set up database**
+   - Go to your Supabase project dashboard
+   - Run the SQL schema from `backend/src/database/schema.sql`
+   - Seed test users: `npm run seed --workspace=backend`
 
-```bash
-npm run dev
-```
+5. **Start development servers**
+   ```bash
+   npm run dev
+   ```
 
-This starts both servers concurrently:
-- **Frontend**: `http://localhost:5173`
-- **Backend**: `http://localhost:8000` (API endpoints at `/api/*`)
+   This starts:
+   - Frontend on `http://localhost:5173`
+   - Backend on `http://localhost:8000`
 
-## Available Scripts
+## 📚 Documentation
+
+- [Frontend Documentation](./frontend/README.md) - Frontend setup and development guide
+- [Backend Documentation](./backend/README.md) - Backend API documentation
+
+## 🔧 Available Scripts
 
 ### Root Level
 - `npm run install:all` - Install all dependencies
-- `npm run dev` - Start both frontend and backend in development mode
-- `npm run build` - Build both frontend and backend for production
+- `npm run dev` - Start both frontend and backend
+- `npm run build` - Build both for production
 
 ### Frontend
-- `npm run dev --workspace=frontend` - Start Vite dev server
-- `npm run build --workspace=frontend` - Build for production
+- `npm run dev --workspace=frontend` - Start frontend dev server
+- `npm run build --workspace=frontend` - Build frontend
 - `npm run preview --workspace=frontend` - Preview production build
 
 ### Backend
-- `npm run dev --workspace=backend` - Start backend with hot reload (tsx watch)
-- `npm run build --workspace=backend` - Compile TypeScript
+- `npm run dev --workspace=backend` - Start backend dev server
+- `npm run build --workspace=backend` - Build backend
 - `npm run start --workspace=backend` - Run production build
+- `npm run seed --workspace=backend` - Seed test users
 
-## API Endpoints
+## 🌐 API Endpoints
 
-- `GET /api/health` - Health check endpoint
-- `GET /api/example` - Example API route
+- `POST /api/login` - User authentication
+- `GET /api/health` - Health check
 
-## Tech Stack
+See [Backend README](./backend/README.md#api-endpoints) for detailed API documentation.
 
-- **Frontend**: React 18, TypeScript, Tailwind CSS, Vite
-- **Backend**: Node.js, Express, TypeScript
-- **Database**: Supabase
-- **Package Manager**: npm workspaces
+## 🔐 Test Credentials
 
-## Development Notes
+After running the seeder:
+- **Email**: `admin@admin.com` | **Password**: `admin123`
+
+## 📝 Development Notes
 
 - Frontend uses Vite for fast HMR (Hot Module Replacement)
 - Backend uses `tsx` for TypeScript execution without compilation
-- API proxy is configured in `vite.config.ts` to forward `/api/*` requests to backend
+- API proxy is configured in `vite.config.ts` to forward `/api/*` requests
 - TypeScript strict mode is enabled for both frontend and backend
 
+## 🚢 Deployment
+
+The project is configured for deployment on Vercel. See deployment documentation for details.
+
+## 📄 License
+
+This project is part of a coding challenge/exam.
