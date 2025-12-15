@@ -120,6 +120,7 @@ GeoInsight/
 ## 🌐 API Endpoints
 
 - `POST /api/login` - User authentication
+- `GET /api/geo` - Get IP geolocation information (current user or specified IP)
 - `GET /api/health` - Health check
 
 See [Backend README](./backend/README.md#api-endpoints) for detailed API documentation.

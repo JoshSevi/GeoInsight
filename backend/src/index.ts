@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
+import geoRoutes from "./routes/geo.js";
 
 dotenv.config();
 
@@ -12,8 +13,12 @@ const PORT = process.env.PORT || 8000;
 app.use(cors());
 app.use(express.json());
 
+// Trust proxy for accurate IP detection
+app.set("trust proxy", true);
+
 // Routes
 app.use("/api", authRoutes);
+app.use("/api", geoRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

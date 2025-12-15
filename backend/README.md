@@ -22,7 +22,10 @@ backend/
 ├── src/
 │   ├── index.ts              # Main server file
 │   ├── routes/
-│   │   └── auth.ts          # Authentication routes
+│   │   ├── auth.ts          # Authentication routes
+│   │   └── geo.ts           # Geolocation routes
+│   ├── utils/
+│   │   └── ipValidator.ts   # IP address validation utility
 │   ├── database/
 │   │   └── schema.sql       # Database schema
 │   └── scripts/
@@ -128,6 +131,46 @@ Login endpoint for user authentication.
 - **400 Bad Request** - Missing email or password
 - **401 Unauthorized** - Invalid credentials
 - **500 Internal Server Error** - Server error
+
+### GET /api/geo
+
+Get geolocation information for an IP address or the current user's IP.
+
+**Query Parameters:**
+- `ip` (optional): IP address to lookup. If not provided, returns current user's IP geolocation
+
+**Examples:**
+
+Get current user's IP geolocation:
+```
+GET /api/geo
+```
+
+Get geolocation for specific IP:
+```
+GET /api/geo?ip=8.8.8.8
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "ip": "8.8.8.8",
+    "city": "Mountain View",
+    "region": "California",
+    "country": "US",
+    "loc": "37.4056,-122.0775",
+    "postal": "94043",
+    "timezone": "America/Los_Angeles"
+  }
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request** - Invalid IP address format
+- **500 Internal Server Error** - Server error or IPInfo API error
 
 ### GET /api/health
 
