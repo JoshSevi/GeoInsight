@@ -68,3 +68,8 @@ export function createApp(): express.Application {
 
   return app;
 }
+
+// Default export required by some serverless runtimes (including Vercel)
+// An Express application is a callable function: (req, res) => void
+const app = createApp();
+export default app;
