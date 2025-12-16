@@ -54,6 +54,14 @@ export interface LoginRequest {
 }
 
 /**
+ * Signup request body
+ */
+export interface SignupRequest {
+  email: string;
+  password: string;
+}
+
+/**
  * History create request body
  */
 export interface HistoryCreateRequest {

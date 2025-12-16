@@ -139,8 +139,19 @@ After running the seeder:
 
 ## 🚢 Deployment
 
-The project is configured for deployment on Vercel. See deployment documentation for details.
+This project is designed to be deployed on **Vercel**.
 
-## 📄 License
+- **Recommended setup**:
+  - Deploy `frontend/` as a Vercel React/Vite app
+  - Deploy `backend/` as a separate Node/Express API (or other hosting you prefer)
+- **Environment variables** must be configured in Vercel for both frontend and backend (see the README in each folder).
 
-This project is part of a coding challenge/exam.
+When deployed, update this section with your actual URLs:
+
+- **Frontend (React app)**: `https://your-frontend.vercel.app`
+- **Backend (API)**: `https://your-backend.vercel.app`
+
+Locally, the app runs on:
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:8000`
+

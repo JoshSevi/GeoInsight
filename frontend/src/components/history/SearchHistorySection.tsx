@@ -48,9 +48,9 @@ export default function SearchHistorySection({
           </Button>
         )}
       </div>
-      <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-        {/* Select All Checkbox */}
-        <div className="flex items-center p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
+      <div className="relative">
+        {/* Select All Checkbox - Sticky Header */}
+        <div className="flex items-center p-2 border-b border-gray-200 sticky top-0 bg-white z-10 mb-2">
           <input
             type="checkbox"
             id="select-all"
@@ -62,30 +62,33 @@ export default function SearchHistorySection({
             htmlFor="select-all"
             className="ml-2 text-sm font-medium text-gray-700 cursor-pointer"
           >
-            Select All
+            Select All ({history.length} {history.length === 1 ? 'item' : 'items'})
           </label>
         </div>
-        {/* Grouped History Items */}
-        {groupHistoryByDate(history).map(([dateKey, items]) => (
-          <div key={dateKey} className="space-y-2">
-            {/* Date Header */}
-            <div className="text-sm font-medium text-gray-500 pt-2">
-              {formatDateHeader(items[0].created_at)}
+        {/* Scrollable History List */}
+        <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollable-history">
+          {/* Grouped History Items */}
+          {groupHistoryByDate(history).map(([dateKey, items]) => (
+            <div key={dateKey} className="space-y-2">
+              {/* Date Header */}
+              <div className="text-sm font-medium text-gray-500 pt-2">
+                {formatDateHeader(items[0].created_at)}
+              </div>
+              {/* History Items for this date */}
+              {items.map((item, index) => (
+                <HistoryItemComponent
+                  key={`${item.id}-${dateKey}-${index}`}
+                  item={item}
+                  dateKey={dateKey}
+                  index={index}
+                  isSelected={selectedItems.has(item.id)}
+                  onToggleSelect={onToggleSelect}
+                  onSelect={onHistorySelect}
+                />
+              ))}
             </div>
-            {/* History Items for this date */}
-            {items.map((item, index) => (
-              <HistoryItemComponent
-                key={`${item.id}-${dateKey}-${index}`}
-                item={item}
-                dateKey={dateKey}
-                index={index}
-                isSelected={selectedItems.has(item.id)}
-                onToggleSelect={onToggleSelect}
-                onSelect={onHistorySelect}
-              />
-            ))}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

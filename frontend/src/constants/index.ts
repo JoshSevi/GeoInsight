@@ -9,10 +9,12 @@ export const STORAGE_KEYS = {
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
+  SIGNUP: '/signup',
 } as const;
 
 export const API_ENDPOINTS = {
   LOGIN: '/api/login',
+  SIGNUP: '/api/signup',
   GEO: '/api/geo',
   HISTORY: '/api/history',
 } as const;

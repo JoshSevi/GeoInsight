@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -52,6 +53,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signup = async (email: string, password: string) => {
+    const { signup: signupAPI } = await import('../lib/api');
+    const response = await signupAPI(email, password);
+
+    // Handle new standardized response format (data.token, data.user)
+    // or legacy format (token, user) for backward compatibility
+    const token = response.data?.token || response.token;
+    const user = response.data?.user || response.user;
+
+    if (response.success && token && user) {
+      setToken(token);
+      setUser(user);
+      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+    } else {
+      throw new Error(response.message || 'Signup failed');
+    }
+  };
+
   const logout = () => {
     setToken(null);
     setUser(null);
@@ -62,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = !!token && !!user;
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, token, login, signup, logout, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   );

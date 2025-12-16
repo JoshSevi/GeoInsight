@@ -10,4 +10,10 @@ const router = express.Router();
  */
 router.post("/login", routeHandler(authController.login.bind(authController)));
 
+/**
+ * POST /api/signup
+ * Register a new user and return JWT token
+ */
+router.post("/signup", routeHandler(authController.signup.bind(authController)));
+
 export default router;

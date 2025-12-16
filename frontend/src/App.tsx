@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import Home from "./pages/Home";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { ROUTES } from "./constants";
@@ -14,6 +15,12 @@ function AppRoutes() {
         path={ROUTES.LOGIN}
         element={
           isAuthenticated ? <Navigate to={ROUTES.HOME} replace /> : <Login />
+        }
+      />
+      <Route
+        path={ROUTES.SIGNUP}
+        element={
+          isAuthenticated ? <Navigate to={ROUTES.HOME} replace /> : <Signup />
         }
       />
       <Route

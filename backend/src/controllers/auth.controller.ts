@@ -1,5 +1,5 @@
 import { Response, NextFunction } from "express";
-import { AuthRequest, LoginRequest } from "../types/index.js";
+import { AuthRequest, LoginRequest, SignupRequest } from "../types/index.js";
 import { authService } from "../services/auth.service.js";
 import { sendSuccess } from "../utils/response.js";
 
@@ -21,6 +21,23 @@ export class AuthController {
         user: result.user,
       },
       "Login successful"
+    );
+  }
+
+  /**
+   * Handle user signup
+   */
+  async signup(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+    const credentials = req.body as SignupRequest;
+    const result = await authService.signup(credentials);
+
+    sendSuccess(
+      res,
+      {
+        token: result.token,
+        user: result.user,
+      },
+      "Signup successful"
     );
   }
 }

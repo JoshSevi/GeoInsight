@@ -1,15 +1,16 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { validateLoginForm } from "../utils/validation";
+import { validateSignupForm } from "../utils/validation";
 import { ROUTES } from "../constants";
 
-export default function Login() {
+export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { signup } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -18,7 +19,7 @@ export default function Login() {
     setLoading(true);
 
     // Validate form
-    const validation = validateLoginForm(email, password);
+    const validation = validateSignupForm(email, password, confirmPassword);
     if (!validation.isValid) {
       const firstError = Object.values(validation.errors)[0];
       setError(firstError || "Please check your input");
@@ -27,12 +28,12 @@ export default function Login() {
     }
 
     try {
-      await login(email, password);
-      // Redirect to home on successful login
+      await signup(email, password);
+      // Redirect to home on successful signup
       navigate(ROUTES.HOME);
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Login failed. Please try again."
+        err instanceof Error ? err.message : "Signup failed. Please try again."
       );
     } finally {
       setLoading(false);
@@ -44,7 +45,7 @@ export default function Login() {
       <div className="max-w-md w-full bg-white rounded-lg shadow-xl p-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">GeoInsight</h1>
-          <p className="text-gray-600">Discover IP locations worldwide</p>
+          <p className="text-gray-600">Create your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -86,7 +87,26 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="Enter your password"
+              placeholder="Enter your password (min. 6 characters)"
+              required
+              disabled={loading}
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Confirm Password
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Confirm your password"
               required
               disabled={loading}
             />
@@ -97,18 +117,18 @@ export default function Login() {
             disabled={loading}
             className="w-full bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? "Creating account..." : "Sign Up"}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-600">
           <p>
-            Don't have an account?{" "}
+            Already have an account?{" "}
             <Link
-              to={ROUTES.SIGNUP}
+              to={ROUTES.LOGIN}
               className="text-indigo-600 hover:text-indigo-700 font-medium"
             >
-              Sign up
+              Sign in
             </Link>
           </p>
         </div>
@@ -116,3 +136,4 @@ export default function Login() {
     </div>
   );
 }
+
