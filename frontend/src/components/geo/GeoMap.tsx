@@ -1,4 +1,7 @@
 import { useMemo } from "react";
+// Note: we intentionally keep relaxed typing for React-Leaflet here because
+// of known type issues with strict/bundler TS configs. Runtime behavior is
+// correct; this is only to keep type-checking from blocking builds.
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { GeoLocationData } from "../../types";
@@ -6,9 +9,11 @@ import { GeoLocationData } from "../../types";
 // Temporary relaxed typings for React-Leaflet components to avoid build-time
 // TypeScript issues in certain bundler/TS configurations. This keeps runtime
 // behavior unchanged while allowing deployment to succeed.
-// If you later install full Leaflet typings and update TS config, you can
-// remove these aliases and use the components directly.
+// Once the React-Leaflet + Leaflet typings are fully stable with bundler mode,
+// these aliases can be removed and components used directly.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const TypedMapContainer = MapContainer as unknown as React.ComponentType<any>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const TypedTileLayer = TileLayer as unknown as React.ComponentType<any>;
 
 interface GeoMapProps {
