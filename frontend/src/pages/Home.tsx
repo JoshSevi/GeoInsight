@@ -11,6 +11,7 @@ export default function Home() {
   const [ipInput, setIpInput] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [currentUserIP, setCurrentUserIP] = useState<string | null>(null);
+  const [ipError, setIpError] = useState<string | null>(null);
 
   // Fetch current user's IP geolocation on mount
   useEffect(() => {
@@ -42,15 +43,19 @@ export default function Home() {
     e.preventDefault();
     const trimmedIP = ipInput.trim();
 
+    // Clear previous errors
+    setIpError(null);
+    setError(null);
+
     if (!trimmedIP) {
-      setError("Please enter an IP address");
+      setIpError("Please enter an IP address");
       return;
     }
 
     // Validate IP format
     if (!isValidIP(trimmedIP)) {
-      setError(
-        "Invalid IP address format. Please enter a valid IPv4 or IPv6 address."
+      setIpError(
+        "Invalid IP address format. Please enter a valid IPv4 (e.g., 8.8.8.8) or IPv6 address."
       );
       return;
     }
@@ -62,13 +67,21 @@ export default function Home() {
       const response = await getGeo(trimmedIP);
       if (response.success && response.data) {
         setGeoData(response.data);
+        setIpError(null); // Clear any IP errors on success
       } else {
-        setError(response.message || "Failed to fetch geolocation");
+        // Backend validation error (e.g., invalid IP format)
+        const errorMsg = response.message || "Failed to fetch geolocation";
+        setIpError(errorMsg);
+        setError(errorMsg);
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch geolocation"
-      );
+      const errorMsg =
+        err instanceof Error ? err.message : "Failed to fetch geolocation";
+      // Check if it's an IP validation error from backend
+      if (errorMsg.includes("Invalid IP") || errorMsg.includes("invalid")) {
+        setIpError(errorMsg);
+      }
+      setError(errorMsg);
     } finally {
       setIsSearching(false);
     }
@@ -102,14 +115,29 @@ export default function Home() {
             Search IP Address
           </h2>
           <form onSubmit={handleSearch} className="flex gap-2">
-            <input
-              type="text"
-              value={ipInput}
-              onChange={(e) => setIpInput(e.target.value)}
-              placeholder="Enter IP address (e.g., 8.8.8.8)"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              disabled={loading || isSearching}
-            />
+            <div className="flex-1">
+              <input
+                type="text"
+                value={ipInput}
+                onChange={(e) => {
+                  setIpInput(e.target.value);
+                  // Clear error when user starts typing
+                  if (ipError) {
+                    setIpError(null);
+                  }
+                }}
+                placeholder="Enter IP address (e.g., 8.8.8.8)"
+                className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                  ipError
+                    ? "border-red-300 bg-red-50"
+                    : "border-gray-300"
+                }`}
+                disabled={loading || isSearching}
+              />
+              {ipError && (
+                <p className="mt-2 text-sm text-red-600">{ipError}</p>
+              )}
+            </div>
             <button
               type="submit"
               disabled={loading || isSearching}
