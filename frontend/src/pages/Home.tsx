@@ -9,6 +9,7 @@ import {
   IPSearchSection,
   GeoInfoDisplay,
   SearchHistorySection,
+  GeoMap,
 } from "../components";
 
 export default function Home() {
@@ -215,6 +216,8 @@ export default function Home() {
             error={error}
             isSearching={isSearching}
           />
+          {/* Map */}
+          <GeoMap geoData={geoData} />
         </div>
 
         <SearchHistorySection

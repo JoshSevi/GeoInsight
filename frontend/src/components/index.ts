@@ -13,6 +13,7 @@ export { default as WelcomeSection } from './layout/WelcomeSection';
 
 // Feature Components
 export { default as GeoInfoDisplay } from './geo/GeoInfoDisplay';
+export { default as GeoMap } from './geo/GeoMap';
 export { default as IPSearchSection } from './search/IPSearchSection';
 export { default as SearchHistorySection } from './history/SearchHistorySection';
 export { default as HistoryDropdown } from './history/HistoryDropdown';
