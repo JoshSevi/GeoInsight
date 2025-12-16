@@ -62,14 +62,14 @@ export function useHistory(token: string | null): UseHistoryReturn {
   );
 
   const deleteHistoryItems = useCallback(
-    async (ips: string[]) => {
-      if (!token || ips.length === 0) return;
+    async (ids: string[]) => {
+      if (!token || ids.length === 0) return;
 
       setLoading(true);
       setError(null);
 
       try {
-        await deleteHistory(ips, token);
+        await deleteHistory(ids, token);
         await loadHistory();
       } catch (err) {
         const errorMessage =

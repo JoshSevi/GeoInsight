@@ -5,9 +5,9 @@ import Button from '../ui/Button';
 
 interface SearchHistorySectionProps {
   history: HistoryItem[];
-  selectedItems: Set<string>;
+  selectedItems: Set<string>; // Stores history item IDs
   isDeleting: boolean;
-  onToggleSelect: (ip: string) => void;
+  onToggleSelect: (itemId: string) => void;
   onSelectAll: (checked: boolean) => void;
   onDeleteSelected: () => void;
   onHistorySelect: (item: HistoryItem) => void;
@@ -48,9 +48,9 @@ export default function SearchHistorySection({
           </Button>
         )}
       </div>
-      <div className="space-y-4">
+      <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
         {/* Select All Checkbox */}
-        <div className="flex items-center p-2 border-b border-gray-200">
+        <div className="flex items-center p-2 border-b border-gray-200 sticky top-0 bg-white z-10">
           <input
             type="checkbox"
             id="select-all"
@@ -75,11 +75,11 @@ export default function SearchHistorySection({
             {/* History Items for this date */}
             {items.map((item, index) => (
               <HistoryItemComponent
-                key={`${item.ip_address}-${dateKey}-${index}`}
+                key={`${item.id}-${dateKey}-${index}`}
                 item={item}
                 dateKey={dateKey}
                 index={index}
-                isSelected={selectedItems.has(item.ip_address)}
+                isSelected={selectedItems.has(item.id)}
                 onToggleSelect={onToggleSelect}
                 onSelect={onHistorySelect}
               />

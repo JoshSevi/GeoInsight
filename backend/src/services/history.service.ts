@@ -131,12 +131,20 @@ export class HistoryService {
         .delete()
         .eq("user_id", userId);
 
-      // If specific IPs provided, delete only those
+      // Priority: IDs > IPs (IDs are more precise for individual item deletion)
       if (
+        deleteRequest.ids &&
+        Array.isArray(deleteRequest.ids) &&
+        deleteRequest.ids.length > 0
+      ) {
+        // Delete by specific IDs (most precise - deletes exact items)
+        query = query.in("id", deleteRequest.ids);
+      } else if (
         deleteRequest.ips &&
         Array.isArray(deleteRequest.ips) &&
         deleteRequest.ips.length > 0
       ) {
+        // Fallback: Delete by IP addresses (deletes all entries with those IPs)
         query = query.in("ip_address", deleteRequest.ips);
       }
 
@@ -149,7 +157,7 @@ export class HistoryService {
 
       logger.info("Search history deleted", {
         userId,
-        ips: deleteRequest.ips || "all",
+        ids: deleteRequest.ids || deleteRequest.ips || "all",
       });
     } catch (error) {
       if (error instanceof ValidationError) {

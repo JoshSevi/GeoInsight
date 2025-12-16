@@ -19,7 +19,7 @@ export interface GeoLocationData {
 }
 
 export interface HistoryItem {
-  id?: string;
+  id: string;
   ip_address: string;
   city?: string | null;
   country?: string | null;

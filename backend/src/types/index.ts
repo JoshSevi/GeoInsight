@@ -67,4 +67,5 @@ export interface HistoryCreateRequest {
  */
 export interface HistoryDeleteRequest {
   ips?: string[];
+  ids?: string[]; // Support deletion by unique IDs for precision
 }

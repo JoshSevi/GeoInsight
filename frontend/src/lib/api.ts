@@ -122,19 +122,21 @@ export async function saveHistory(
 }
 
 /**
- * Delete search history items
+ * Delete search history items by IDs
+ * @param ids - Array of history item IDs for precise deletion
+ * @param token - Authentication token
  */
 export async function deleteHistory(
-  ips: string[],
+  ids: string[],
   token: string
 ): Promise<{ success: boolean; message: string }> {
-  const response = await fetch(`${API_URL}/api/history`, {
+  const response = await fetch(`${API_URL}${API_ENDPOINTS.HISTORY}`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ ips }),
+    body: JSON.stringify({ ids }),
   });
 
   const data = await response.json();

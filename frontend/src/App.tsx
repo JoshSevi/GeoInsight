@@ -1,9 +1,9 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Login from './pages/Login';
-import Home from './pages/Home';
-import ProtectedRoute from './components/ProtectedRoute';
-import { ROUTES } from './constants';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import Login from "./pages/Login";
+import Home from "./pages/Home";
+import ProtectedRoute from "./components/ProtectedRoute";
+import { ROUTES } from "./constants";
 
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
@@ -12,7 +12,9 @@ function AppRoutes() {
     <Routes>
       <Route
         path={ROUTES.LOGIN}
-        element={isAuthenticated ? <Navigate to={ROUTES.HOME} replace /> : <Login />}
+        element={
+          isAuthenticated ? <Navigate to={ROUTES.HOME} replace /> : <Login />
+        }
       />
       <Route
         path={ROUTES.HOME}
@@ -37,5 +39,4 @@ function App() {
   );
 }
 
-export default App
-
+export default App;

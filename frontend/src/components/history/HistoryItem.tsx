@@ -6,7 +6,7 @@ interface HistoryItemProps {
   dateKey: string;
   index: number;
   isSelected: boolean;
-  onToggleSelect: (ip: string) => void;
+  onToggleSelect: (itemId: string) => void;
   onSelect: (item: HistoryItemType) => void;
 }
 
@@ -24,7 +24,7 @@ export default function HistoryItem({
         type="checkbox"
         id={`history-${dateKey}-${index}`}
         checked={isSelected}
-        onChange={() => onToggleSelect(item.ip_address)}
+        onChange={() => onToggleSelect(item.id)}
         onClick={(e) => e.stopPropagation()}
         className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 flex-shrink-0"
       />

@@ -32,7 +32,7 @@ export default function Home() {
 
   const [currentUserIP, setCurrentUserIP] = useState<string | null>(null);
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set()); // Store history item IDs
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch current user's IP geolocation on mount
@@ -74,14 +74,14 @@ export default function Home() {
     await handleSearchForIP(item.ip_address);
   };
 
-  // Handle checkbox selection for deletion
-  const handleCheckboxChange = (ip: string) => {
+  // Handle checkbox selection for deletion (using unique IDs)
+  const handleCheckboxChange = (itemId: string) => {
     setSelectedItems((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(ip)) {
-        newSet.delete(ip);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
       } else {
-        newSet.add(ip);
+        newSet.add(itemId);
       }
       return newSet;
     });
@@ -90,7 +90,7 @@ export default function Home() {
   // Handle select all checkboxes
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedItems(new Set(searchHistory.map((item) => item.ip_address)));
+      setSelectedItems(new Set(searchHistory.map((item) => item.id)));
     } else {
       setSelectedItems(new Set());
     }
@@ -102,8 +102,9 @@ export default function Home() {
 
     setIsDeleting(true);
     try {
-      const ipsToDelete = Array.from(selectedItems);
-      await deleteHistoryItems(ipsToDelete);
+      // Delete by IDs for precise deletion
+      const selectedIds = Array.from(selectedItems);
+      await deleteHistoryItems(selectedIds);
       setSelectedItems(new Set());
     } catch (error) {
       console.error("Error deleting search history:", error);
