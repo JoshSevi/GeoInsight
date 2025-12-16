@@ -40,12 +40,18 @@ export class GeoService {
         ? `${config.ipinfo.baseUrl}/${targetIP}/geo`
         : `${config.ipinfo.baseUrl}/geo`;
 
-      // Add token if available
-      if (config.ipinfo.token) {
-        apiUrl += `?token=${config.ipinfo.token}`;
+      // Add token if available and valid (not a URL)
+      const token = config.ipinfo.token?.trim();
+      if (token && !token.startsWith("http")) {
+        // Only add token if it's not a URL (tokens are alphanumeric strings)
+        const separator = apiUrl.includes("?") ? "&" : "?";
+        apiUrl += `${separator}token=${encodeURIComponent(token)}`;
       }
 
-      logger.debug("Fetching geolocation", { ip: targetIP || "auto-detect" });
+      logger.debug("Fetching geolocation", {
+        ip: targetIP || "auto-detect",
+        hasToken: !!token && !token.startsWith("http")
+      });
 
       // Fetch from IPInfo API
       const response = await fetch(apiUrl, {
@@ -57,12 +63,32 @@ export class GeoService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        logger.error("IPInfo API error", new Error(errorText), {
+        let errorMessage = "Failed to fetch geolocation data";
+
+        // Try to parse error message from response
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error?.message || errorData.message || errorMessage;
+        } catch {
+          // If not JSON, use the text as is
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+
+        logger.error("IPInfo API error", new Error(errorMessage), {
           status: response.status,
+          statusText: response.statusText,
           ip: targetIP,
+          url: apiUrl.replace(config.ipinfo.token || "", "***"), // Hide token in logs
         });
+
         throw new ExternalServiceError(
-          "Failed to fetch geolocation data",
+          response.status === 429
+            ? "Rate limit exceeded. Please try again later."
+            : response.status === 403
+            ? "Access denied. Please check your IPInfo token."
+            : errorMessage,
           "IPInfo"
         );
       }
@@ -78,8 +104,25 @@ export class GeoService {
       ) {
         throw error;
       }
-      logger.error("Geo service error", error);
-      throw new ExternalServiceError("Failed to fetch geolocation data", "IPInfo");
+
+      // Handle network errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        logger.error("Network error when fetching geolocation", error, {
+          ip: targetIP,
+        });
+        throw new ExternalServiceError(
+          "Network error: Unable to reach geolocation service. Please check your internet connection.",
+          "IPInfo"
+        );
+      }
+
+      logger.error("Geo service error", error, {
+        ip: targetIP,
+      });
+      throw new ExternalServiceError(
+        error instanceof Error ? error.message : "Failed to fetch geolocation data",
+        "IPInfo"
+      );
     }
   }
 

@@ -6,7 +6,6 @@ import {
 } from "../types/index.js";
 import { historyService } from "../services/history.service.js";
 import { sendSuccess } from "../utils/response.js";
-import { AuthenticationError } from "../utils/errors.js";
 
 /**
  * Search history controller
@@ -20,17 +19,10 @@ export class HistoryController {
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    try {
-      const userId = req.userId;
-      if (!userId) {
-        throw new AuthenticationError("User not authenticated");
-      }
-
-      const data = await historyService.getUserHistory(userId);
-      sendSuccess(res, data);
-    } catch (error) {
-      next(error);
-    }
+    // userId is guaranteed by requireAuth middleware
+    const userId = req.userId!;
+    const data = await historyService.getUserHistory(userId);
+    sendSuccess(res, data);
   }
 
   /**
@@ -41,19 +33,12 @@ export class HistoryController {
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    try {
-      const userId = req.userId;
-      if (!userId) {
-        throw new AuthenticationError("User not authenticated");
-      }
+    // userId is guaranteed by requireAuth middleware
+    const userId = req.userId!;
+    const historyData = req.body as HistoryCreateRequest;
+    await historyService.addHistory(userId, historyData);
 
-      const historyData = req.body as HistoryCreateRequest;
-      await historyService.addHistory(userId, historyData);
-
-      sendSuccess(res, undefined, "Search history saved");
-    } catch (error) {
-      next(error);
-    }
+    sendSuccess(res, undefined, "Search history saved");
   }
 
   /**
@@ -64,19 +49,12 @@ export class HistoryController {
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    try {
-      const userId = req.userId;
-      if (!userId) {
-        throw new AuthenticationError("User not authenticated");
-      }
+    // userId is guaranteed by requireAuth middleware
+    const userId = req.userId!;
+    const deleteRequest = req.body as HistoryDeleteRequest;
+    await historyService.deleteHistory(userId, deleteRequest);
 
-      const deleteRequest = req.body as HistoryDeleteRequest;
-      await historyService.deleteHistory(userId, deleteRequest);
-
-      sendSuccess(res, undefined, "Search history deleted");
-    } catch (error) {
-      next(error);
-    }
+    sendSuccess(res, undefined, "Search history deleted");
   }
 }
 

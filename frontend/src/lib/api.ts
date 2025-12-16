@@ -2,12 +2,19 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export interface LoginResponse {
   success: boolean;
-  message: string;
-  token?: string;
+  message?: string;
+  token?: string; // Legacy format
   user?: {
     id: string;
     email: string;
-  };
+  }; // Legacy format
+  data?: {
+    token: string;
+    user: {
+      id: string;
+      email: string;
+    };
+  }; // New standardized format
 }
 
 export interface GeoResponse {
@@ -73,12 +80,20 @@ export async function getGeo(ip?: string, token?: string): Promise<GeoResponse> 
     headers,
   });
 
-  const data = await response.json();
-
+  // Check if response is ok before parsing JSON
   if (!response.ok) {
-    throw new Error(data.message || 'Failed to fetch geolocation');
+    let errorMessage = 'Failed to fetch geolocation';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch {
+      // If response is not JSON, use status text
+      errorMessage = response.statusText || `HTTP ${response.status}`;
+    }
+    throw new Error(errorMessage);
   }
 
+  const data = await response.json();
   return data;
 }
 

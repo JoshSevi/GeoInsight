@@ -1,5 +1,6 @@
 import express from "express";
 import { geoController } from "../controllers/geo.controller.js";
+import { routeHandler } from "../utils/routeHandler.js";
 
 const router = express.Router();
 
@@ -10,8 +11,9 @@ const router = express.Router();
  * Query Parameters:
  * - ip (optional): IP address to lookup. If not provided, returns current user's IP geolocation
  */
-router.get("/geo", (req, res, next) => {
-  geoController.getGeoLocation(req as express.Request, res, next).catch(next);
-});
+router.get(
+  "/geo",
+  routeHandler(geoController.getGeoLocation.bind(geoController))
+);
 
 export default router;

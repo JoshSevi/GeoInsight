@@ -43,11 +43,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { login: loginAPI } = await import('../lib/api');
     const response = await loginAPI(email, password);
 
-    if (response.success && response.token && response.user) {
-      setToken(response.token);
-      setUser(response.user);
-      localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+    // Handle new standardized response format (data.token, data.user)
+    // or legacy format (token, user) for backward compatibility
+    const token = response.data?.token || response.token;
+    const user = response.data?.user || response.user;
+
+    if (response.success && token && user) {
+      setToken(token);
+      setUser(user);
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
     } else {
       throw new Error(response.message || 'Login failed');
     }

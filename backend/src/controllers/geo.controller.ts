@@ -15,17 +15,13 @@ export class GeoController {
     res: Response,
     next: NextFunction
   ): Promise<void> {
-    try {
-      const { ip } = req.query;
-      const clientIP = geoService.extractClientIP(req);
+    const { ip } = req.query;
+    const clientIP = geoService.extractClientIP(req);
 
-      const ipString = ip ? String(ip).trim() : undefined;
-      const data = await geoService.getGeoLocation(ipString, clientIP);
+    const ipString = ip ? String(ip).trim() : undefined;
+    const data = await geoService.getGeoLocation(ipString, clientIP);
 
-      sendSuccess(res, data);
-    } catch (error) {
-      next(error);
-    }
+    sendSuccess(res, data);
   }
 }
 

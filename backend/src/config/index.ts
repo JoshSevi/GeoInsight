@@ -1,6 +1,13 @@
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
 
-dotenv.config();
+// Load environment variables - resolve path relative to this file's location
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// Go up from config/ to backend/ root
+const envPath = resolve(__dirname, "..", "..", ".env");
+dotenv.config({ path: envPath });
 
 /**
  * Configuration interface for type safety
@@ -38,9 +45,15 @@ function validateEnv(): void {
   const missing = required.filter((key) => !process.env[key]);
 
   if (missing.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missing.join(", ")}`
-    );
+    const errorMessage = `
+Missing required environment variables: ${missing.join(", ")}
+
+Please create a .env file in the backend/ directory with the following variables:
+${required.map((key) => `${key}=your_${key.toLowerCase()}_here`).join("\n")}
+
+See .env.example for a template.
+    `.trim();
+    throw new Error(errorMessage);
   }
 }
 

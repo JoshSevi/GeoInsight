@@ -58,4 +58,5 @@ export function notFoundHandler(
   next: NextFunction
 ): void {
   sendError(res, `Route ${req.method} ${req.path} not found`, 404);
+  next();
 }

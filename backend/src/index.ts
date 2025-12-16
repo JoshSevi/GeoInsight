@@ -1,81 +1,102 @@
+// Note: dotenv is loaded in config/index.ts before validation
+
 import express from "express";
 import cors from "cors";
 import { config } from "./config/index.js";
 import { logger } from "./utils/logger.js";
-import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
-import authRoutes from "./routes/auth.js";
-import geoRoutes from "./routes/geo.js";
-import historyRoutes from "./routes/history.js";
+import { errorHandler, notFoundHandler } from "./middleware/index.js";
+import { registerRoutes } from "./routes/index.js";
 import { dbClient } from "./database/client.js";
 
-const app = express();
+/**
+ * Create and configure Express application
+ */
+function createApp(): express.Application {
+  const app = express();
 
-// Trust proxy for accurate IP detection (must be before routes)
-app.set("trust proxy", true);
+  // Trust proxy for accurate IP detection (must be before routes)
+  app.set("trust proxy", true);
 
-// Middleware
-app.use(
-  cors({
-    origin: config.cors.origin,
-  })
-);
-app.use(express.json());
+  // Global middleware
+  app.use(
+    cors({
+      origin: config.cors.origin,
+    })
+  );
+  app.use(express.json());
 
-// Request logging middleware (development only)
-if (config.nodeEnv === "development") {
-  app.use((req, res, next) => {
-    logger.debug(`${req.method} ${req.path}`, {
-      query: req.query,
-      body: req.body,
+  // Request logging middleware (development only)
+  if (config.nodeEnv === "development") {
+    app.use((req, res, next) => {
+      logger.debug(`${req.method} ${req.path}`, {
+        query: req.query,
+        body: req.body,
+      });
+      next();
     });
-    next();
+  }
+
+  // Health check endpoint
+  app.get("/api/health", async (req, res) => {
+    const dbHealth = await dbClient.healthCheck();
+    const status = dbHealth ? "healthy" : "unhealthy";
+    const statusCode = dbHealth ? 200 : 503;
+
+    res.status(statusCode).json({
+      status,
+      message: "GeoInsight API",
+      timestamp: new Date().toISOString(),
+      services: {
+        database: dbHealth ? "connected" : "disconnected",
+      },
+    });
   });
+
+  // Register all API routes
+  registerRoutes(app);
+
+  // 404 handler for undefined routes
+  app.use(notFoundHandler);
+
+  // Error handling middleware (must be last)
+  app.use(errorHandler);
+
+  return app;
 }
 
-// Health check endpoint
-app.get("/api/health", async (req, res) => {
-  const dbHealth = await dbClient.healthCheck();
-  const status = dbHealth ? "healthy" : "unhealthy";
-  const statusCode = dbHealth ? 200 : 503;
+const app = createApp();
 
-  res.status(statusCode).json({
-    status,
-    message: "GeoInsight API",
-    timestamp: new Date().toISOString(),
-    services: {
-      database: dbHealth ? "connected" : "disconnected",
-    },
+/**
+ * Start the server
+ */
+function startServer(): void {
+  const PORT = config.port;
+
+  const server = app.listen(PORT, () => {
+    logger.info(`Server running on http://localhost:${PORT}`, {
+      environment: config.nodeEnv,
+      port: PORT,
+    });
   });
-});
 
-// API Routes
-app.use("/api", authRoutes);
-app.use("/api", geoRoutes);
-app.use("/api", historyRoutes);
+  // Graceful shutdown
+  const shutdown = (signal: string) => {
+    logger.info(`${signal} signal received: closing HTTP server`);
+    server.close(() => {
+      logger.info("HTTP server closed");
+      process.exit(0);
+    });
 
-// 404 handler for undefined routes
-app.use(notFoundHandler);
+    // Force close after 10 seconds
+    setTimeout(() => {
+      logger.error("Forced shutdown after timeout");
+      process.exit(1);
+    }, 10000);
+  };
 
-// Error handling middleware (must be last)
-app.use(errorHandler);
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+}
 
-// Start server
-const PORT = config.port;
-
-app.listen(PORT, () => {
-  logger.info(`Server running on http://localhost:${PORT}`, {
-    environment: config.nodeEnv,
-    port: PORT,
-  });
-});
-
-// Graceful shutdown
-process.on("SIGTERM", () => {
-  logger.info("SIGTERM signal received: closing HTTP server");
-  process.exit(0);
-});
-
-process.on("SIGINT", () => {
-  logger.info("SIGINT signal received: closing HTTP server");
-  process.exit(0);
-});
+// Start the server
+startServer();
