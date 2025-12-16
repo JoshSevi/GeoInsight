@@ -20,7 +20,11 @@ export function requestLogger(
 
   // Override res.end to log response time
   const originalEnd = res.end;
-  res.end = function (chunk?: unknown, encoding?: unknown) {
+  res.end = function (
+    chunk?: any,
+    encoding?: BufferEncoding | (() => void),
+    cb?: () => void
+  ) {
     const duration = Date.now() - startTime;
     const logLevel = res.statusCode >= 400 ? "warn" : "info";
 
@@ -29,7 +33,7 @@ export function requestLogger(
       statusCode: res.statusCode,
     });
 
-    originalEnd.call(this, chunk, encoding);
+    return originalEnd.call(this as any, chunk, encoding as any, cb);
   };
 
   next();

@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, { SignOptions } from "jsonwebtoken";
 import { getSupabaseClient } from "../database/client.js";
 import { config } from "../config/index.js";
 import { BCRYPT_SALT_ROUNDS } from "../constants/index.js";
@@ -72,7 +72,7 @@ export class AuthService {
           email: (user as User).email,
         },
         config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn }
+        { expiresIn: config.jwt.expiresIn } as SignOptions
       );
 
       logger.info("User logged in successfully", { userId: (user as User).id });
@@ -158,7 +158,7 @@ export class AuthService {
           email: newUser.email,
         },
         config.jwt.secret,
-        { expiresIn: config.jwt.expiresIn }
+        { expiresIn: config.jwt.expiresIn } as SignOptions
       );
 
       logger.info("User signed up successfully", { userId: newUser.id });
