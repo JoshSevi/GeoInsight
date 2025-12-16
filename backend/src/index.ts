@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
 import geoRoutes from "./routes/geo.js";
+import historyRoutes from "./routes/history.js";
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.set("trust proxy", true);
 // Routes
 app.use("/api", authRoutes);
 app.use("/api", geoRoutes);
+app.use("/api", historyRoutes);
 
 // Health check
 app.get("/api/health", (req, res) => {

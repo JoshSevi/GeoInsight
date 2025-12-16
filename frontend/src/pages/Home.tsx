@@ -1,10 +1,16 @@
 import { useEffect, useState, FormEvent } from "react";
 import { useAuth } from "../context/AuthContext";
-import { getGeo, GeoResponse } from "../lib/api";
+import {
+  getGeo,
+  GeoResponse,
+  getHistory,
+  saveHistory,
+  HistoryItem,
+} from "../lib/api";
 import { isValidIP } from "../utils/ipValidator";
 
 export default function Home() {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const [geoData, setGeoData] = useState<GeoResponse["data"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -12,25 +18,26 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [currentUserIP, setCurrentUserIP] = useState<string | null>(null);
   const [ipError, setIpError] = useState<string | null>(null);
-  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [searchHistory, setSearchHistory] = useState<HistoryItem[]>([]);
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
-
-  const HISTORY_KEY = "geoinsight_search_history";
-  const MAX_HISTORY = 10; // Maximum number of history items to keep
 
   // Fetch current user's IP geolocation on mount
   useEffect(() => {
     fetchCurrentUserGeo();
-    loadSearchHistory();
-  }, []);
+    if (token) {
+      loadSearchHistory();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
-  // Load search history from localStorage
-  const loadSearchHistory = () => {
+  // Load search history from database
+  const loadSearchHistory = async () => {
+    if (!token) return;
+
     try {
-      const stored = localStorage.getItem(HISTORY_KEY);
-      if (stored) {
-        const history = JSON.parse(stored);
-        setSearchHistory(Array.isArray(history) ? history : []);
+      const response = await getHistory(token);
+      if (response.success && response.data) {
+        setSearchHistory(response.data);
       }
     } catch (error) {
       console.error("Error loading search history:", error);
@@ -38,36 +45,29 @@ export default function Home() {
     }
   };
 
-  // Save IP to search history
-  const addToHistory = (ip: string) => {
+  // Save IP to search history in database
+  const addToHistory = async (ip: string, city?: string, country?: string) => {
     // Don't add current user's IP to history
-    if (ip === currentUserIP) {
+    if (ip === currentUserIP || !token) {
       return;
     }
 
-    setSearchHistory((prev) => {
-      // Remove duplicate if exists, then add to beginning
-      const filtered = prev.filter((item) => item !== ip);
-      const updated = [ip, ...filtered].slice(0, MAX_HISTORY); // Keep only last MAX_HISTORY items
-
-      // Save to localStorage
-      try {
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
-      } catch (error) {
-        console.error("Error saving search history:", error);
-      }
-
-      return updated;
-    });
+    try {
+      await saveHistory(ip, token, city, country);
+      // Reload history to get updated list
+      await loadSearchHistory();
+    } catch (error) {
+      console.error("Error saving search history:", error);
+    }
   };
 
   // Handle selecting an IP from history
-  const handleHistorySelect = (ip: string) => {
-    setIpInput(ip);
+  const handleHistorySelect = (item: HistoryItem) => {
+    setIpInput(item.ip_address);
     setShowHistoryDropdown(false);
     setIpError(null);
     // Trigger search
-    handleSearchFromHistory(ip);
+    handleSearchFromHistory(item.ip_address);
   };
 
   // Search from history selection
@@ -77,9 +77,11 @@ export default function Home() {
     setIpError(null);
 
     try {
-      const response = await getGeo(ip);
+      const response = await getGeo(ip, token || undefined);
       if (response.success && response.data) {
         setGeoData(response.data);
+        // Update history (move to top) with new city/country data
+        await addToHistory(ip, response.data.city, response.data.country);
       } else {
         setError(response.message || "Failed to fetch geolocation");
       }
@@ -94,7 +96,9 @@ export default function Home() {
 
   // Filter history based on input and limit to 5 for dropdown
   const filteredHistory = searchHistory
-    .filter((ip) => ip.toLowerCase().includes(ipInput.toLowerCase()))
+    .filter((item) =>
+      item.ip_address.toLowerCase().includes(ipInput.toLowerCase())
+    )
     .slice(0, 5); // Limit to 5 most recent items in dropdown
 
   const fetchCurrentUserGeo = async () => {
@@ -103,7 +107,7 @@ export default function Home() {
     setIpError(null);
     setIpInput(""); // Clear input when fetching current user's IP
     try {
-      const response = await getGeo(); // No IP parameter = current user's IP
+      const response = await getGeo(undefined, token || undefined); // No IP parameter = current user's IP
       if (response.success && response.data) {
         setGeoData(response.data);
         setCurrentUserIP(response.data.ip); // Store current user's IP
@@ -151,12 +155,16 @@ export default function Home() {
     setError(null);
 
     try {
-      const response = await getGeo(trimmedIP);
+      const response = await getGeo(trimmedIP, token || undefined);
       if (response.success && response.data) {
         setGeoData(response.data);
         setIpError(null); // Clear any IP errors on success
-        // Add to search history
-        addToHistory(trimmedIP);
+        // Add to search history in database with city and country
+        await addToHistory(
+          trimmedIP,
+          response.data.city,
+          response.data.country
+        );
       } else {
         // Backend validation error (e.g., invalid IP format)
         const errorMsg = response.message || "Failed to fetch geolocation";
@@ -255,16 +263,25 @@ export default function Home() {
                     </div>
                     {filteredHistory.length > 0 ? (
                       <>
-                        {filteredHistory.map((ip, index) => (
+                        {filteredHistory.map((item, index) => (
                           <button
-                            key={`${ip}-${index}`}
+                            key={`${item.ip_address}-${index}`}
                             type="button"
-                            onClick={() => handleHistorySelect(ip)}
+                            onClick={() => handleHistorySelect(item)}
                             className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors"
                           >
-                            <span className="font-mono text-gray-900">
-                              {ip}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-gray-900 font-medium">
+                                {item.ip_address}
+                              </span>
+                              {(item.city || item.country) && (
+                                <span className="text-xs text-gray-500">
+                                  {[item.city, item.country]
+                                    .filter(Boolean)
+                                    .join(", ")}
+                                </span>
+                              )}
+                            </div>
                           </button>
                         ))}
                       </>
@@ -426,13 +443,23 @@ export default function Home() {
               Search History
             </h2>
             <div className="space-y-2">
-              {searchHistory.map((ip, index) => (
-                <div
-                  key={`${ip}-${index}`}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+              {searchHistory.map((item, index) => (
+                <button
+                  key={`${item.ip_address}-${index}`}
+                  onClick={() => handleHistorySelect(item)}
+                  className="w-full flex items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors text-left"
                 >
-                  <span className="font-mono text-gray-900">{ip}</span>
-                </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-gray-900 font-medium">
+                      {item.ip_address}
+                    </span>
+                    {(item.city || item.country) && (
+                      <span className="text-sm text-gray-600">
+                        {[item.city, item.country].filter(Boolean).join(", ")}
+                      </span>
+                    )}
+                  </div>
+                </button>
               ))}
             </div>
           </div>

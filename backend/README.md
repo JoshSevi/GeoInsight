@@ -23,7 +23,10 @@ backend/
 │   ├── index.ts              # Main server file
 │   ├── routes/
 │   │   ├── auth.ts          # Authentication routes
-│   │   └── geo.ts           # Geolocation routes
+│   │   ├── geo.ts           # Geolocation routes
+│   │   └── history.ts       # Search history routes
+│   ├── middleware/
+│   │   └── auth.ts          # JWT authentication middleware
 │   ├── utils/
 │   │   └── ipValidator.ts   # IP address validation utility
 │   ├── database/
@@ -171,6 +174,78 @@ GET /api/geo?ip=8.8.8.8
 
 - **400 Bad Request** - Invalid IP address format
 - **500 Internal Server Error** - Server error or IPInfo API error
+
+### GET /api/history
+
+Get user's search history. Requires authentication.
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": ["8.8.8.8", "1.1.1.1", "192.168.1.1"]
+}
+```
+
+### POST /api/history
+
+Save an IP address to user's search history. Requires authentication.
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+```json
+{
+  "ip": "8.8.8.8"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Search history saved"
+}
+```
+
+### DELETE /api/history
+
+Delete search history items. Requires authentication.
+
+**Headers:**
+```
+Authorization: Bearer <jwt_token>
+```
+
+**Request Body:**
+```json
+{
+  "ips": ["8.8.8.8", "1.1.1.1"]
+}
+```
+
+To delete all history, send empty array:
+```json
+{
+  "ips": []
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Search history deleted"
+}
+```
 
 ### GET /api/health
 
