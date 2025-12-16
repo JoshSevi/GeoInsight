@@ -12,11 +12,90 @@ export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [currentUserIP, setCurrentUserIP] = useState<string | null>(null);
   const [ipError, setIpError] = useState<string | null>(null);
+  const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
+
+  const HISTORY_KEY = "geoinsight_search_history";
+  const MAX_HISTORY = 10; // Maximum number of history items to keep
 
   // Fetch current user's IP geolocation on mount
   useEffect(() => {
     fetchCurrentUserGeo();
+    loadSearchHistory();
   }, []);
+
+  // Load search history from localStorage
+  const loadSearchHistory = () => {
+    try {
+      const stored = localStorage.getItem(HISTORY_KEY);
+      if (stored) {
+        const history = JSON.parse(stored);
+        setSearchHistory(Array.isArray(history) ? history : []);
+      }
+    } catch (error) {
+      console.error("Error loading search history:", error);
+      setSearchHistory([]);
+    }
+  };
+
+  // Save IP to search history
+  const addToHistory = (ip: string) => {
+    // Don't add current user's IP to history
+    if (ip === currentUserIP) {
+      return;
+    }
+
+    setSearchHistory((prev) => {
+      // Remove duplicate if exists, then add to beginning
+      const filtered = prev.filter((item) => item !== ip);
+      const updated = [ip, ...filtered].slice(0, MAX_HISTORY); // Keep only last MAX_HISTORY items
+
+      // Save to localStorage
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      } catch (error) {
+        console.error("Error saving search history:", error);
+      }
+
+      return updated;
+    });
+  };
+
+  // Handle selecting an IP from history
+  const handleHistorySelect = (ip: string) => {
+    setIpInput(ip);
+    setShowHistoryDropdown(false);
+    setIpError(null);
+    // Trigger search
+    handleSearchFromHistory(ip);
+  };
+
+  // Search from history selection
+  const handleSearchFromHistory = async (ip: string) => {
+    setIsSearching(true);
+    setError(null);
+    setIpError(null);
+
+    try {
+      const response = await getGeo(ip);
+      if (response.success && response.data) {
+        setGeoData(response.data);
+      } else {
+        setError(response.message || "Failed to fetch geolocation");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch geolocation"
+      );
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Filter history based on input and limit to 5 for dropdown
+  const filteredHistory = searchHistory
+    .filter((ip) => ip.toLowerCase().includes(ipInput.toLowerCase()))
+    .slice(0, 5); // Limit to 5 most recent items in dropdown
 
   const fetchCurrentUserGeo = async () => {
     setLoading(true);
@@ -76,6 +155,8 @@ export default function Home() {
       if (response.success && response.data) {
         setGeoData(response.data);
         setIpError(null); // Clear any IP errors on success
+        // Add to search history
+        addToHistory(trimmedIP);
       } else {
         // Backend validation error (e.g., invalid IP format)
         const errorMsg = response.message || "Failed to fetch geolocation";
@@ -136,7 +217,7 @@ export default function Home() {
           </h2>
           <form onSubmit={handleSearch} className="space-y-3">
             <div className="flex gap-2">
-              <div className="flex-1">
+              <div className="flex-1 relative">
                 <input
                   type="text"
                   value={ipInput}
@@ -146,6 +227,19 @@ export default function Home() {
                     if (ipError) {
                       setIpError(null);
                     }
+                    // Show history dropdown when typing
+                    if (e.target.value.length > 0) {
+                      setShowHistoryDropdown(true);
+                    }
+                  }}
+                  onFocus={() => {
+                    if (searchHistory.length > 0) {
+                      setShowHistoryDropdown(true);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Delay to allow click on history item
+                    setTimeout(() => setShowHistoryDropdown(false), 200);
                   }}
                   placeholder="Enter IP address (e.g., 8.8.8.8)"
                   className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
@@ -153,6 +247,55 @@ export default function Home() {
                   }`}
                   disabled={loading || isSearching}
                 />
+                {/* History Dropdown */}
+                {showHistoryDropdown && searchHistory.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    <div className="p-2 text-xs font-semibold text-gray-500 uppercase border-b">
+                      Recent Searches
+                    </div>
+                    {filteredHistory.length > 0 ? (
+                      <>
+                        {filteredHistory.map((ip, index) => (
+                          <button
+                            key={`${ip}-${index}`}
+                            type="button"
+                            onClick={() => handleHistorySelect(ip)}
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors"
+                          >
+                            <span className="font-mono text-gray-900">
+                              {ip}
+                            </span>
+                          </button>
+                        ))}
+                      </>
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-gray-500">
+                        No matching searches
+                      </div>
+                    )}
+                    <div className="border-t p-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowHistoryDropdown(false);
+                          // Scroll to search history section at bottom
+                          const historySection = document.querySelector(
+                            "[data-history-section]"
+                          );
+                          if (historySection) {
+                            historySection.scrollIntoView({
+                              behavior: "smooth",
+                              block: "start",
+                            });
+                          }
+                        }}
+                        className="w-full px-4 py-2 text-sm text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 rounded-md transition-colors font-medium text-center"
+                      >
+                        View All Search History
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {ipError && (
                   <p className="mt-2 text-sm text-red-600">{ipError}</p>
                 )}
@@ -272,6 +415,28 @@ export default function Home() {
             </div>
           )}
         </div>
+
+        {/* Search History Section */}
+        {searchHistory.length > 0 && (
+          <div
+            className="bg-white rounded-lg shadow p-6 mt-6"
+            data-history-section
+          >
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Search History
+            </h2>
+            <div className="space-y-2">
+              {searchHistory.map((ip, index) => (
+                <div
+                  key={`${ip}-${index}`}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                >
+                  <span className="font-mono text-gray-900">{ip}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
