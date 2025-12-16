@@ -21,6 +21,7 @@ export default function Home() {
   const fetchCurrentUserGeo = async () => {
     setLoading(true);
     setError(null);
+    setIpError(null);
     setIpInput(""); // Clear input when fetching current user's IP
     try {
       const response = await getGeo(); // No IP parameter = current user's IP
@@ -37,6 +38,13 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleClear = () => {
+    setIpInput("");
+    setIpError(null);
+    setError(null);
+    fetchCurrentUserGeo();
   };
 
   const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
@@ -114,37 +122,49 @@ export default function Home() {
           <h2 className="text-xl font-bold text-gray-900 mb-4">
             Search IP Address
           </h2>
-          <form onSubmit={handleSearch} className="flex gap-2">
-            <div className="flex-1">
-              <input
-                type="text"
-                value={ipInput}
-                onChange={(e) => {
-                  setIpInput(e.target.value);
-                  // Clear error when user starts typing
-                  if (ipError) {
-                    setIpError(null);
-                  }
-                }}
-                placeholder="Enter IP address (e.g., 8.8.8.8)"
-                className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                  ipError
-                    ? "border-red-300 bg-red-50"
-                    : "border-gray-300"
-                }`}
+          <form onSubmit={handleSearch} className="space-y-3">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  value={ipInput}
+                  onChange={(e) => {
+                    setIpInput(e.target.value);
+                    // Clear error when user starts typing
+                    if (ipError) {
+                      setIpError(null);
+                    }
+                  }}
+                  placeholder="Enter IP address (e.g., 8.8.8.8)"
+                  className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                    ipError
+                      ? "border-red-300 bg-red-50"
+                      : "border-gray-300"
+                  }`}
+                  disabled={loading || isSearching}
+                />
+                {ipError && (
+                  <p className="mt-2 text-sm text-red-600">{ipError}</p>
+                )}
+              </div>
+              <button
+                type="submit"
                 disabled={loading || isSearching}
-              />
-              {ipError && (
-                <p className="mt-2 text-sm text-red-600">{ipError}</p>
-              )}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {isSearching ? "Searching..." : "Search"}
+              </button>
             </div>
-            <button
-              type="submit"
-              disabled={loading || isSearching}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isSearching ? "Searching..." : "Search"}
-            </button>
+            {(ipInput || (currentUserIP && geoData?.ip !== currentUserIP)) && (
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={loading || isSearching}
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Clear Search
+              </button>
+            )}
           </form>
         </div>
 
