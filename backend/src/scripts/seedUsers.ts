@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { supabaseFetch } from "../database/client.js";
+import { getSupabaseClient } from "../database/client.js";
 import { BCRYPT_SALT_ROUNDS } from "../constants/index.js";
 import { logger } from "../utils/logger.js";
 import { sanitizeEmail } from "../utils/validation.js";
@@ -16,16 +16,19 @@ async function seedUsers(): Promise<void> {
   try {
     logger.info("Starting user seeding...");
 
+    const supabase = getSupabaseClient();
+
     for (const user of testUsers) {
       const sanitizedEmail = sanitizeEmail(user.email);
 
       // Check if user already exists
-      const existing = await supabaseFetch<{ email: string }[]>(
-        `/users?email=eq.${encodeURIComponent(sanitizedEmail)}&select=email&limit=1`,
-        { method: "GET" }
-      );
+      const { data: existingUser } = await supabase
+        .from("users")
+        .select("email")
+        .eq("email", sanitizedEmail)
+        .single();
 
-      if (existing.length > 0) {
+      if (existingUser) {
         logger.info(`User ${user.email} already exists, skipping...`);
         continue;
       }
@@ -34,15 +37,18 @@ async function seedUsers(): Promise<void> {
       const passwordHash = await bcrypt.hash(user.password, BCRYPT_SALT_ROUNDS);
 
       // Insert user
-      await supabaseFetch<void>("/users", {
-        method: "POST",
-        body: JSON.stringify({
+      const { error } = await supabase.from("users").insert([
+        {
           email: sanitizedEmail,
           password_hash: passwordHash,
-        }),
-      });
+        },
+      ]);
 
-      logger.info(`Successfully seeded user: ${user.email}`);
+      if (error) {
+        logger.error(`Error seeding user ${user.email}`, error);
+      } else {
+        logger.info(`Successfully seeded user: ${user.email}`);
+      }
     }
 
     logger.info("User seeding completed!");

@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
-import { supabaseFetch } from "../database/client.js";
+import { getSupabaseClient } from "../database/client.js";
 import { config } from "../config/index.js";
 import { BCRYPT_SALT_ROUNDS } from "../constants/index.js";
 import {
@@ -10,11 +10,7 @@ import {
 } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
 import { User, LoginRequest, SignupRequest } from "../types/index.js";
-import {
-  isValidEmail,
-  sanitizeEmail,
-  isValidPassword,
-} from "../utils/validation.js";
+import { isValidEmail, sanitizeEmail, isValidPassword } from "../utils/validation.js";
 
 /**
  * Authentication service
@@ -43,37 +39,37 @@ export class AuthService {
     const sanitizedEmail = sanitizeEmail(credentials.email);
 
     try {
-      // Find user by email via Supabase REST
-      const users = await supabaseFetch<User[]>(
-        `/users?email=eq.${encodeURIComponent(sanitizedEmail)}&limit=1`,
-        { method: "GET" }
-      );
+      // Find user by email
+      const supabase = getSupabaseClient();
+      const { data: user, error: fetchError } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", sanitizedEmail)
+        .single();
 
-      const user = users[0];
-
-      if (!user) {
-        logger.warn("Login attempt with invalid email", {
-          email: sanitizedEmail,
-        });
+      if (fetchError || !user) {
+        logger.warn("Login attempt with invalid email", { email: sanitizedEmail });
         throw new AuthenticationError("Invalid email or password");
       }
 
       // Verify password
       const isPasswordValid = await bcrypt.compare(
         credentials.password,
-        user.password_hash
+        (user as User).password_hash
       );
 
       if (!isPasswordValid) {
-        logger.warn("Login attempt with invalid password", { userId: user.id });
+        logger.warn("Login attempt with invalid password", {
+          userId: (user as User).id,
+        });
         throw new AuthenticationError("Invalid email or password");
       }
 
       // Generate JWT token
       const token = jwt.sign(
         {
-          userId: user.id,
-          email: user.email,
+          userId: (user as User).id,
+          email: (user as User).email,
         },
         config.jwt.secret,
         { expiresIn: config.jwt.expiresIn } as SignOptions
@@ -83,13 +79,13 @@ export class AuthService {
 
       return {
         token,
-        user: { id: user.id, email: user.email },
+        user: {
+          id: (user as User).id,
+          email: (user as User).email,
+        },
       };
     } catch (error) {
-      if (
-        error instanceof AuthenticationError ||
-        error instanceof ValidationError
-      ) {
+      if (error instanceof AuthenticationError || error instanceof ValidationError) {
         throw error;
       }
       logger.error("Login error", error);
@@ -120,18 +116,17 @@ export class AuthService {
     const sanitizedEmail = sanitizeEmail(credentials.email);
 
     try {
-      // Check if user already exists
-      const existing = await supabaseFetch<{ id: string }[]>(
-        `/users?email=eq.${encodeURIComponent(
-          sanitizedEmail
-        )}&select=id&limit=1`,
-        { method: "GET" }
-      );
+      const supabase = getSupabaseClient();
 
-      if (existing.length > 0) {
-        logger.warn("Signup attempt with existing email", {
-          email: sanitizedEmail,
-        });
+      // Check if user already exists
+      const { data: existingUser, error: fetchError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", sanitizedEmail)
+        .single();
+
+      if (existingUser) {
+        logger.warn("Signup attempt with existing email", { email: sanitizedEmail });
         throw new ValidationError("Email already registered");
       }
 
@@ -141,23 +136,18 @@ export class AuthService {
         BCRYPT_SALT_ROUNDS
       );
 
-      // Create new user (PostgREST: insert returns created row with Prefer: return=representation)
-      const [newUser] = await supabaseFetch<{ id: string; email: string }[]>(
-        "/users?select=id,email",
-        {
-          method: "POST",
-          headers: {
-            Prefer: "return=representation",
-          },
-          body: JSON.stringify({
-            email: sanitizedEmail,
-            password_hash: passwordHash,
-          }),
-        }
-      );
+      // Create new user
+      const { data: newUser, error: insertError } = await supabase
+        .from("users")
+        .insert({
+          email: sanitizedEmail,
+          password_hash: passwordHash,
+        })
+        .select("id, email")
+        .single();
 
-      if (!newUser) {
-        logger.error("Failed to create user", { email: sanitizedEmail });
+      if (insertError || !newUser) {
+        logger.error("Failed to create user", { error: insertError, email: sanitizedEmail });
         throw new ValidationError("Failed to create user account");
       }
 

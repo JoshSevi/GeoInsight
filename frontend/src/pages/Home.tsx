@@ -138,8 +138,6 @@ export default function Home() {
 
   const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Hide history dropdown when a manual search is triggered
-    setShowHistoryDropdown(false);
     const trimmedIP = ipInput.trim();
 
     if (!validateIP(trimmedIP)) {
