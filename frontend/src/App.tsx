@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Home from './pages/Home';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ROUTES } from './constants';
 
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
@@ -10,18 +11,18 @@ function AppRoutes() {
   return (
     <Routes>
       <Route
-        path="/login"
-        element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+        path={ROUTES.LOGIN}
+        element={isAuthenticated ? <Navigate to={ROUTES.HOME} replace /> : <Login />}
       />
       <Route
-        path="/"
+        path={ROUTES.HOME}
         element={
           <ProtectedRoute>
             <Home />
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
     </Routes>
   );
 }

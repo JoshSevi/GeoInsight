@@ -1,9 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface User {
-  id: string;
-  email: string;
-}
+import { User } from '../types';
+import { STORAGE_KEYS } from '../constants';
 
 interface AuthContextType {
   user: User | null;
@@ -15,17 +12,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'geoinsight_token';
-const USER_KEY = 'geoinsight_user';
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
   // Load token and user from localStorage on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    const storedUser = localStorage.getItem(USER_KEY);
+    const storedToken = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
 
     if (storedToken && storedUser) {
       try {
@@ -33,8 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(JSON.parse(storedUser));
       } catch (error) {
         console.error('Error parsing stored user:', error);
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        localStorage.removeItem(STORAGE_KEYS.USER);
       }
     }
   }, []);
@@ -51,8 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (response.success && token && user) {
       setToken(token);
       setUser(user);
-      localStorage.setItem(TOKEN_KEY, token);
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     } else {
       throw new Error(response.message || 'Login failed');
     }
@@ -61,8 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
   };
 
   const isAuthenticated = !!token && !!user;

@@ -1,6 +1,8 @@
 import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { validateLoginForm } from "../utils/validation";
+import { ROUTES } from "../constants";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -15,17 +17,11 @@ export default function Login() {
     setError("");
     setLoading(true);
 
-    // Basic validation
-    if (!email || !password) {
-      setError("Please enter both email and password");
-      setLoading(false);
-      return;
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address");
+    // Validate form
+    const validation = validateLoginForm(email, password);
+    if (!validation.isValid) {
+      const firstError = Object.values(validation.errors)[0];
+      setError(firstError || "Please check your input");
       setLoading(false);
       return;
     }
@@ -33,7 +29,7 @@ export default function Login() {
     try {
       await login(email, password);
       // Redirect to home on successful login
-      navigate("/");
+      navigate(ROUTES.HOME);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Login failed. Please try again."
