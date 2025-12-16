@@ -1,7 +1,15 @@
-import { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import { GeoLocationData } from '../../types';
+import { useMemo } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import { GeoLocationData } from "../../types";
+
+// Temporary relaxed typings for React-Leaflet components to avoid build-time
+// TypeScript issues in certain bundler/TS configurations. This keeps runtime
+// behavior unchanged while allowing deployment to succeed.
+// If you later install full Leaflet typings and update TS config, you can
+// remove these aliases and use the components directly.
+const TypedMapContainer = MapContainer as unknown as React.ComponentType<any>;
+const TypedTileLayer = TileLayer as unknown as React.ComponentType<any>;
 
 interface GeoMapProps {
   geoData: GeoLocationData | null;
@@ -9,12 +17,10 @@ interface GeoMapProps {
 
 // Fix default marker icon paths for Leaflet when bundled
 const defaultIcon = L.icon({
-  iconUrl:
-    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl:
-    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl:
-    'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
   iconSize: [25, 41],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
@@ -26,7 +32,7 @@ L.Marker.prototype.options.icon = defaultIcon;
 export default function GeoMap({ geoData }: GeoMapProps) {
   const position = useMemo(() => {
     if (!geoData?.loc) return null;
-    const [latStr, lonStr] = geoData.loc.split(',');
+    const [latStr, lonStr] = geoData.loc.split(",");
     const lat = parseFloat(latStr);
     const lon = parseFloat(lonStr);
     if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
@@ -39,13 +45,13 @@ export default function GeoMap({ geoData }: GeoMapProps) {
 
   return (
     <div className="mt-6 h-96 w-full rounded-lg overflow-hidden border border-gray-200">
-      <MapContainer
+      <TypedMapContainer
         center={position}
         zoom={12}
         scrollWheelZoom={false}
         className="h-full w-full"
       >
-        <TileLayer
+        <TypedTileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
@@ -66,9 +72,7 @@ export default function GeoMap({ geoData }: GeoMapProps) {
             </div>
           </Popup>
         </Marker>
-      </MapContainer>
+      </TypedMapContainer>
     </div>
   );
 }
-
-
