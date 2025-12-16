@@ -72,22 +72,7 @@ export class HistoryService {
     try {
       const supabase = getSupabaseClient();
 
-      // Check if this IP already exists in user's recent history
-      const { data: existing } = await supabase
-        .from("search_history")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("ip_address", ip)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-
-      // If exists, delete the old entry (we'll add a new one to move it to top)
-      if (existing) {
-        await supabase.from("search_history").delete().eq("id", existing.id);
-      }
-
-      // Insert new history entry
+      // Insert new history entry (keep all searches, even for the same IP)
       const { error } = await supabase.from("search_history").insert([
         {
           user_id: userId,

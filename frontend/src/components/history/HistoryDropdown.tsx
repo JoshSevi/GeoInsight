@@ -1,5 +1,4 @@
 import { HistoryItem } from '../../types';
-import { HISTORY_DROPDOWN_LIMIT } from '../../constants';
 
 interface HistoryDropdownProps {
   history: HistoryItem[];
@@ -14,18 +13,16 @@ export default function HistoryDropdown({
   onSelect,
   onViewAll,
 }: HistoryDropdownProps) {
-  const filtered = history
-    .filter((item) =>
-      item.ip_address.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .slice(0, HISTORY_DROPDOWN_LIMIT);
+  const filtered = history.filter((item) =>
+    item.ip_address.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (filtered.length === 0) {
     return null;
   }
 
   return (
-    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-80 overflow-y-auto">
       <div className="p-2 text-xs font-semibold text-gray-500 uppercase border-b">
         Recent Searches
       </div>

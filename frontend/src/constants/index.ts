@@ -32,5 +32,5 @@ export const TIME_FORMAT_OPTIONS = {
   HOUR12: true,
 } as const;
 
-export const HISTORY_DROPDOWN_LIMIT = 5;
+export const HISTORY_DROPDOWN_LIMIT = 10;
 

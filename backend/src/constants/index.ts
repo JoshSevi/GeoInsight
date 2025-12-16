@@ -2,7 +2,7 @@
  * Application constants
  */
 export const BCRYPT_SALT_ROUNDS = 10;
-export const HISTORY_LIMIT = 10;
+export const HISTORY_LIMIT = 1000;
 export const BEARER_TOKEN_PREFIX = "Bearer ";
 
 export const HTTP_STATUS = {
