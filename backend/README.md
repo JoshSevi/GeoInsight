@@ -96,9 +96,29 @@ backend/
 
 ### 1. Install Dependencies
 
+All dependencies are managed via npm and defined in `package.json`. Install them with:
+
 ```bash
 npm install
 ```
+
+This will install all production and development dependencies listed above.
+
+### 2. External Services Setup
+
+#### Supabase (Database)
+
+1. Create a free account at [supabase.com](https://supabase.com)
+2. Create a new project
+3. Go to Project Settings → API
+4. Copy your **Project URL** and **Service Role Key**
+5. These will be used in your `.env` file (see Environment Variables section)
+
+#### IPInfo API (Optional - for enhanced geolocation)
+
+1. Sign up at [ipinfo.io](https://ipinfo.io)
+2. Get your API token from the dashboard
+3. Add it to your `.env` file (optional - the API works without a token but with rate limits)
 
 ### 2. Environment Variables
 
@@ -126,6 +146,8 @@ CORS_ORIGIN=*
 ```
 
 **Required variables**: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`
+
+> **Note**: All npm packages are installed automatically when you run `npm install`. No additional manual installation is required for the dependencies listed above.
 
 ### 3. Database Setup
 
@@ -155,6 +177,67 @@ The server will start on `http://localhost:8000`
 ### POST /api/login
 
 Login endpoint for user authentication.
+
+**Request Body:**
+```json
+{
+  "email": "admin@admin.com",
+  "password": "admin123"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "token": "jwt_token_here",
+    "user": {
+      "id": "user-uuid",
+      "email": "admin@admin.com"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request** - Missing email or password
+- **401 Unauthorized** - Invalid credentials
+- **500 Internal Server Error** - Server error
+
+### POST /api/signup
+
+Register a new user account.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Signup successful",
+  "data": {
+    "token": "jwt_token_here",
+    "user": {
+      "id": "user-uuid",
+      "email": "user@example.com"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+- **400 Bad Request** - Missing email or password, invalid email format, or email already registered
+- **500 Internal Server Error** - Server error
 
 **Request Body:**
 ```json

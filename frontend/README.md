@@ -12,7 +12,32 @@ This is a modern React application built with Vite, featuring a clean and respon
 - **Language**: TypeScript
 - **Build Tool**: Vite
 - **Styling**: Tailwind CSS
+- **Routing**: React Router DOM
+- **Maps**: Leaflet & React Leaflet
 - **Database Client**: Supabase JS
+
+## Dependencies
+
+### Production Dependencies
+
+- **react** (^18.2.0) - React UI library
+- **react-dom** (^18.2.0) - React DOM renderer
+- **react-router-dom** (^7.10.1) - Client-side routing
+- **@supabase/supabase-js** (^2.39.0) - Supabase client for database operations
+- **leaflet** (^1.9.4) - Interactive maps library
+- **react-leaflet** (^4.2.1) - React components for Leaflet maps
+
+### Development Dependencies
+
+- **vite** (^5.0.8) - Build tool and dev server
+- **typescript** (^5.2.2) - TypeScript compiler
+- **@vitejs/plugin-react** (^4.2.1) - Vite plugin for React
+- **tailwindcss** (^3.3.6) - Utility-first CSS framework
+- **autoprefixer** (^10.4.16) - CSS vendor prefixer
+- **postcss** (^8.4.32) - CSS post-processor
+- **eslint** (^8.55.0) - JavaScript/TypeScript linter
+- **@types/react** (^18.2.43) - TypeScript types for React
+- **@types/react-dom** (^18.2.17) - TypeScript types for React DOM
 
 ## Project Structure
 
@@ -37,11 +62,27 @@ frontend/
 
 ### 1. Install Dependencies
 
+All dependencies are managed via npm and defined in `package.json`. Install them with:
+
 ```bash
 npm install
 ```
 
-### 2. Environment Variables
+This will install all production and development dependencies listed above.
+
+> **Note**: All npm packages are installed automatically when you run `npm install`. No additional manual installation is required.
+
+### 2. External Services Setup
+
+#### Supabase (Database)
+
+1. Create a free account at [supabase.com](https://supabase.com)
+2. Create a new project (or use the same project as the backend)
+3. Go to Project Settings → API
+4. Copy your **Project URL** and **Anon Key**
+5. These will be used in your `.env` file (see Environment Variables section)
+
+### 3. Environment Variables
 
 Create a `.env` file in the `frontend/` directory:
 
@@ -52,7 +93,7 @@ VITE_API_URL=http://localhost:8000
 VITE_IPINFO_API_URL=https://ipinfo.io
 ```
 
-### 3. Start Development Server
+### 4. Start Development Server
 
 ```bash
 npm run dev
