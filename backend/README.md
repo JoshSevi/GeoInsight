@@ -17,26 +17,59 @@ This backend provides RESTful API endpoints for user authentication and geolocat
 
 ## Project Structure
 
+Enterprise-level architecture with separation of concerns:
+
 ```
 backend/
 ├── src/
-│   ├── index.ts              # Main server file
+│   ├── index.ts                    # Main server file with app initialization
+│   ├── config/
+│   │   └── index.ts                # Centralized configuration management
+│   ├── constants/
+│   │   └── index.ts                # Application constants
+│   ├── controllers/
+│   │   ├── auth.controller.ts     # Authentication controller
+│   │   ├── geo.controller.ts      # Geolocation controller
+│   │   └── history.controller.ts   # History controller
+│   ├── services/
+│   │   ├── auth.service.ts        # Authentication business logic
+│   │   ├── geo.service.ts         # Geolocation business logic
+│   │   └── history.service.ts      # History business logic
 │   ├── routes/
-│   │   ├── auth.ts          # Authentication routes
-│   │   ├── geo.ts           # Geolocation routes
-│   │   └── history.ts       # Search history routes
+│   │   ├── auth.ts                # Authentication routes
+│   │   ├── geo.ts                 # Geolocation routes
+│   │   └── history.ts             # Search history routes
 │   ├── middleware/
-│   │   └── auth.ts          # JWT authentication middleware
-│   ├── utils/
-│   │   └── ipValidator.ts   # IP address validation utility
+│   │   ├── auth.ts                # JWT authentication middleware
+│   │   ├── errorHandler.ts        # Centralized error handling
+│   │   └── requestLogger.ts       # Request logging middleware
 │   ├── database/
-│   │   └── schema.sql       # Database schema
+│   │   ├── client.ts              # Database client singleton
+│   │   └── schema.sql             # Database schema
+│   ├── types/
+│   │   └── index.ts               # TypeScript type definitions
+│   ├── utils/
+│   │   ├── errors.ts              # Custom error classes
+│   │   ├── logger.ts              # Centralized logging utility
+│   │   ├── response.ts            # API response utilities
+│   │   ├── validation.ts          # Input validation utilities
+│   │   └── ipValidator.ts         # IP address validation
 │   └── scripts/
-│       └── seedUsers.ts     # User seeder script
+│       └── seedUsers.ts           # User seeder script
 ├── package.json
 ├── tsconfig.json
-└── .env                      # Environment variables
+└── .env.example                   # Environment variables template
 ```
+
+### Architecture Layers
+
+1. **Controllers**: Handle HTTP requests/responses, delegate to services
+2. **Services**: Contain business logic and orchestrate data operations
+3. **Database Client**: Singleton pattern for database connections
+4. **Middleware**: Request processing, authentication, error handling
+5. **Utils**: Reusable utilities (logging, validation, errors)
+6. **Config**: Centralized configuration with validation
+7. **Types**: Shared TypeScript interfaces and types
 
 ## Dependencies
 
@@ -69,15 +102,30 @@ npm install
 
 ### 2. Environment Variables
 
-Create a `.env` file in the `backend/` directory:
+Create a `.env` file in the `backend/` directory (see `.env.example` for template):
 
 ```env
+# Server Configuration
 PORT=8000
+NODE_ENV=development
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+JWT_EXPIRES_IN=7d
+
+# Supabase Configuration
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
-JWT_SECRET=your_jwt_secret_key
+
+# IPInfo API Configuration (optional)
 IPINFO_TOKEN=your_ipinfo_token
+IPINFO_BASE_URL=https://ipinfo.io
+
+# CORS Configuration
+CORS_ORIGIN=*
 ```
+
+**Required variables**: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `JWT_SECRET`
 
 ### 3. Database Setup
 
@@ -271,8 +319,40 @@ Health check endpoint to verify the API is running.
 The backend uses:
 - **tsx** for running TypeScript directly without compilation in development
 - **Express** with CORS enabled for cross-origin requests
-- **JWT** tokens with 7-day expiration for authentication
+- **JWT** tokens with configurable expiration for authentication
 - **bcryptjs** with 10 salt rounds for password hashing
+
+## Architecture Features
+
+### Enterprise-Level Patterns
+
+- **Separation of Concerns**: Controllers → Services → Database
+- **Error Handling**: Centralized error handling with custom error classes
+- **Logging**: Structured logging with different log levels
+- **Configuration Management**: Type-safe configuration with validation
+- **Type Safety**: Full TypeScript coverage with shared types
+- **Singleton Pattern**: Database client singleton for connection management
+- **Response Standardization**: Consistent API response format
+
+### Error Handling
+
+The application uses custom error classes:
+- `ValidationError` (400) - Input validation failures
+- `AuthenticationError` (401) - Authentication failures
+- `AuthorizationError` (403) - Authorization failures
+- `NotFoundError` (404) - Resource not found
+- `ConflictError` (409) - Resource conflicts
+- `ExternalServiceError` (502) - External API failures
+
+All errors are caught by centralized error handling middleware and returned in a consistent format.
+
+### Logging
+
+Structured logging with different levels:
+- **DEBUG**: Development-only detailed information
+- **INFO**: General informational messages
+- **WARN**: Warning messages (operational errors)
+- **ERROR**: Error messages with stack traces
 
 ## Security Notes
 
@@ -280,3 +360,5 @@ The backend uses:
 - JWT tokens are used for stateless authentication
 - Service role key is required for database operations
 - Row Level Security (RLS) is enabled on the users table
+- Environment variables are validated on startup
+- Error messages are sanitized in production mode

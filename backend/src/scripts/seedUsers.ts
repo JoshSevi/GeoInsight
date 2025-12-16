@@ -1,12 +1,8 @@
 import bcrypt from "bcryptjs";
-import { createClient } from "@supabase/supabase-js";
-import dotenv from "dotenv";
-
-dotenv.config();
-
-const supabaseUrl = process.env.SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+import { getSupabaseClient } from "../database/client.js";
+import { BCRYPT_SALT_ROUNDS } from "../constants/index.js";
+import { logger } from "../utils/logger.js";
+import { sanitizeEmail } from "../utils/validation.js";
 
 // Test users to seed
 const testUsers = [
@@ -16,54 +12,52 @@ const testUsers = [
   },
 ];
 
-async function seedUsers() {
+async function seedUsers(): Promise<void> {
   try {
-    console.log("🌱 Starting user seeding...");
+    logger.info("Starting user seeding...");
+
+    const supabase = getSupabaseClient();
 
     for (const user of testUsers) {
+      const sanitizedEmail = sanitizeEmail(user.email);
+
       // Check if user already exists
       const { data: existingUser } = await supabase
         .from("users")
         .select("email")
-        .eq("email", user.email.toLowerCase().trim())
+        .eq("email", sanitizedEmail)
         .single();
 
       if (existingUser) {
-        console.log(`⏭️  User ${user.email} already exists, skipping...`);
+        logger.info(`User ${user.email} already exists, skipping...`);
         continue;
       }
 
       // Hash password
-      const saltRounds = 10;
-      const passwordHash = await bcrypt.hash(user.password, saltRounds);
+      const passwordHash = await bcrypt.hash(user.password, BCRYPT_SALT_ROUNDS);
 
       // Insert user
-      const { data, error } = await supabase
-        .from("users")
-        .insert([
-          {
-            email: user.email.toLowerCase().trim(),
-            password_hash: passwordHash,
-          },
-        ])
-        .select();
+      const { error } = await supabase.from("users").insert([
+        {
+          email: sanitizedEmail,
+          password_hash: passwordHash,
+        },
+      ]);
 
       if (error) {
-        console.error(`❌ Error seeding user ${user.email}:`, error.message);
+        logger.error(`Error seeding user ${user.email}`, error);
       } else {
-        console.log(`✅ Successfully seeded user: ${user.email}`);
-        console.log(`   Email: ${user.email}`);
-        console.log(`   Password: ${user.password}`);
+        logger.info(`Successfully seeded user: ${user.email}`);
       }
     }
 
-    console.log("\n✨ User seeding completed!");
-    console.log("\n📝 Test credentials:");
+    logger.info("User seeding completed!");
+    logger.info("Test credentials:");
     testUsers.forEach((user) => {
-      console.log(`   Email: ${user.email} | Password: ${user.password}`);
+      logger.info(`Email: ${user.email} | Password: ${user.password}`);
     });
   } catch (error) {
-    console.error("❌ Seeding error:", error);
+    logger.error("Seeding error", error);
     process.exit(1);
   }
 }
@@ -71,11 +65,11 @@ async function seedUsers() {
 // Run seeder
 seedUsers()
   .then(() => {
-    console.log("\n🎉 Seeding process finished!");
+    logger.info("Seeding process finished!");
     process.exit(0);
   })
   .catch((error) => {
-    console.error("❌ Fatal error:", error);
+    logger.error("Fatal error during seeding", error);
     process.exit(1);
   });
 
