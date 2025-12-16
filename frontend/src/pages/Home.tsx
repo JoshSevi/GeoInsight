@@ -5,6 +5,7 @@ import {
   GeoResponse,
   getHistory,
   saveHistory,
+  deleteHistory,
   HistoryItem,
 } from "../lib/api";
 import { isValidIP } from "../utils/ipValidator";
@@ -20,6 +21,8 @@ export default function Home() {
   const [ipError, setIpError] = useState<string | null>(null);
   const [searchHistory, setSearchHistory] = useState<HistoryItem[]>([]);
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch current user's IP geolocation on mount
   useEffect(() => {
@@ -61,13 +64,125 @@ export default function Home() {
     }
   };
 
-  // Handle selecting an IP from history
+  // Helper function to format date header
+  const formatDateHeader = (dateString: string): string => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // Reset time for comparison
+    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const yesterdayOnly = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate());
+
+    if (dateOnly.getTime() === todayOnly.getTime()) {
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+      const dateFormatted = date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      return `Today - ${dayName}, ${dateFormatted}`;
+    } else if (dateOnly.getTime() === yesterdayOnly.getTime()) {
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+      const dateFormatted = date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      return `Yesterday - ${dayName}, ${dateFormatted}`;
+    } else {
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+      const dateFormatted = date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      return `${dayName}, ${dateFormatted}`;
+    }
+  };
+
+  // Helper function to format time
+  const formatTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  // Group history items by date
+  const groupHistoryByDate = (history: HistoryItem[]) => {
+    const grouped: { [key: string]: HistoryItem[] } = {};
+
+    history.forEach((item) => {
+      const date = new Date(item.created_at);
+      const dateKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString().split('T')[0];
+
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(item);
+    });
+
+    // Sort dates in descending order (most recent first)
+    return Object.entries(grouped).sort((a, b) => b[0].localeCompare(a[0]));
+  };
+
+  // Handle selecting an IP from history (for search)
   const handleHistorySelect = (item: HistoryItem) => {
     setIpInput(item.ip_address);
     setShowHistoryDropdown(false);
     setIpError(null);
     // Trigger search
     handleSearchFromHistory(item.ip_address);
+  };
+
+  // Handle checkbox selection for deletion
+  const handleCheckboxChange = (ip: string) => {
+    setSelectedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(ip)) {
+        newSet.delete(ip);
+      } else {
+        newSet.add(ip);
+      }
+      return newSet;
+    });
+  };
+
+  // Handle select all checkboxes
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedItems(new Set(searchHistory.map((item) => item.ip_address)));
+    } else {
+      setSelectedItems(new Set());
+    }
+  };
+
+  // Handle delete selected items
+  const handleDeleteSelected = async () => {
+    if (!token || selectedItems.size === 0) return;
+
+    setIsDeleting(true);
+    try {
+      const ipsToDelete = Array.from(selectedItems);
+      await deleteHistory(ipsToDelete, token);
+      // Clear selection and reload history
+      setSelectedItems(new Set());
+      await loadSearchHistory();
+    } catch (error) {
+      console.error("Error deleting search history:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete search history"
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Search from history selection
@@ -439,27 +554,83 @@ export default function Home() {
             className="bg-white rounded-lg shadow p-6 mt-6"
             data-history-section
           >
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
-              Search History
-            </h2>
-            <div className="space-y-2">
-              {searchHistory.map((item, index) => (
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">
+                Search History
+              </h2>
+              {selectedItems.size > 0 && (
                 <button
-                  key={`${item.ip_address}-${index}`}
-                  onClick={() => handleHistorySelect(item)}
-                  className="w-full flex items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors text-left"
+                  onClick={handleDeleteSelected}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-gray-900 font-medium">
-                      {item.ip_address}
-                    </span>
-                    {(item.city || item.country) && (
-                      <span className="text-sm text-gray-600">
-                        {[item.city, item.country].filter(Boolean).join(", ")}
-                      </span>
-                    )}
-                  </div>
+                  {isDeleting
+                    ? "Deleting..."
+                    : `Delete ${selectedItems.size} ${selectedItems.size === 1 ? "item" : "items"}`}
                 </button>
+              )}
+            </div>
+            <div className="space-y-4">
+              {/* Select All Checkbox */}
+              <div className="flex items-center p-2 border-b border-gray-200">
+                <input
+                  type="checkbox"
+                  id="select-all"
+                  checked={
+                    searchHistory.length > 0 &&
+                    selectedItems.size === searchHistory.length
+                  }
+                  onChange={(e) => handleSelectAll(e.target.checked)}
+                  className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                />
+                <label
+                  htmlFor="select-all"
+                  className="ml-2 text-sm font-medium text-gray-700 cursor-pointer"
+                >
+                  Select All
+                </label>
+              </div>
+              {/* Grouped History Items */}
+              {groupHistoryByDate(searchHistory).map(([dateKey, items]) => (
+                <div key={dateKey} className="space-y-2">
+                  {/* Date Header */}
+                  <div className="text-sm font-medium text-gray-500 pt-2">
+                    {formatDateHeader(items[0].created_at)}
+                  </div>
+                  {/* History Items for this date */}
+                  {items.map((item, index) => (
+                    <div
+                      key={`${item.ip_address}-${dateKey}-${index}`}
+                      className="flex items-center gap-3 p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        id={`history-${dateKey}-${index}`}
+                        checked={selectedItems.has(item.ip_address)}
+                        onChange={() => handleCheckboxChange(item.ip_address)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 flex-shrink-0"
+                      />
+                      <button
+                        onClick={() => handleHistorySelect(item)}
+                        className="flex-1 flex items-center gap-2 text-left"
+                      >
+                        <span className="font-mono text-gray-900 font-medium">
+                          {item.ip_address}
+                        </span>
+                        {(item.city || item.country) && (
+                          <span className="text-sm text-gray-600">
+                            {[item.city, item.country].filter(Boolean).join(", ")}
+                          </span>
+                        )}
+                      </button>
+                      {/* Time on the right */}
+                      <span className="text-sm text-gray-500 flex-shrink-0">
+                        {formatTime(item.created_at)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               ))}
             </div>
           </div>
