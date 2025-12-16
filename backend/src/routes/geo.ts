@@ -42,11 +42,14 @@ router.get("/geo", async (req, res) => {
         (req.headers["x-real-ip"] as string) ||
         clientIP;
 
-      if (userIP) {
-        apiUrl = `${IPINFO_BASE_URL}/${userIP}/geo`;
-      } else {
-        // Fallback to current IP endpoint
+      // If we detect localhost (::1 or 127.0.0.1), use IPInfo's auto-detect endpoint
+      // which will detect the actual public IP of the request origin
+      if (!userIP || userIP === "::1" || userIP === "127.0.0.1" || userIP.startsWith("::ffff:127")) {
+        // Use IPInfo's auto-detect endpoint - it will detect the client's real IP
         apiUrl = `${IPINFO_BASE_URL}/geo`;
+      } else {
+        // Use the detected IP
+        apiUrl = `${IPINFO_BASE_URL}/${userIP}/geo`;
       }
     }
 
