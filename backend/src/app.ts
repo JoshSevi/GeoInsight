@@ -5,7 +5,7 @@ import { logger } from "./utils/logger.js";
 import { errorHandler, notFoundHandler } from "./middleware/index.js";
 import { apiLimiter } from "./middleware/rateLimiter.js";
 import { registerRoutes } from "./routes/index.js";
-import { dbClient } from "./database/client.js";
+import { healthCheck } from "./database/client.js";
 
 /**
  * Create and configure Express application
@@ -15,8 +15,11 @@ import { dbClient } from "./database/client.js";
 export function createApp(): express.Application {
   const app = express();
 
-  // Trust proxy for accurate IP detection (must be before routes)
-  app.set("trust proxy", true);
+  // Trust proxy for accurate IP detection in production behind a proxy (e.g. Vercel)
+  // In development we disable this to avoid express-rate-limit safety warnings.
+  if (config.nodeEnv === "production") {
+    app.set("trust proxy", true);
+  }
 
   // Global middleware
   app.use(
@@ -43,7 +46,7 @@ export function createApp(): express.Application {
 
   // Health check endpoint
   app.get("/api/health", async (req, res) => {
-    const dbHealth = await dbClient.healthCheck();
+    const dbHealth = await healthCheck();
     const status = dbHealth ? "healthy" : "unhealthy";
     const statusCode = dbHealth ? 200 : 503;
 

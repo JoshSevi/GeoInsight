@@ -1,58 +1,85 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { config } from "../config/index.js";
 import { logger } from "../utils/logger.js";
 import { AppError } from "../utils/errors.js";
 
+const SUPABASE_REST_URL = `${config.supabase.url}/rest/v1`;
+const SERVICE_ROLE_KEY = config.supabase.serviceRoleKey;
+
+interface SupabaseRequestInit extends RequestInit {
+  headers?: Record<string, string>;
+}
+
 /**
- * Singleton Supabase client instance
+ * Low-level helper to call Supabase PostgREST over HTTP.
+ * This replaces the @supabase/supabase-js client so we can run on Vercel Node functions.
  */
-class DatabaseClient {
-  private client: SupabaseClient | null = null;
+export async function supabaseFetch<T>(
+  path: string,
+  init: SupabaseRequestInit = {}
+): Promise<T> {
+  const url = `${SUPABASE_REST_URL}${path}`;
 
-  /**
-   * Get or create Supabase client instance
-   */
-  getClient(): SupabaseClient {
-    if (!this.client) {
-      try {
-        this.client = createClient(
-          config.supabase.url,
-          config.supabase.serviceRoleKey,
-          {
-            auth: {
-              autoRefreshToken: false,
-              persistSession: false,
-            },
-          }
-        );
-        logger.info("Database client initialized");
-      } catch (error) {
-        logger.error("Failed to initialize database client", error);
-        throw new AppError(
-          500,
-          "Database initialization failed. Please check your configuration."
-        );
-      }
-    }
+  const headers: Record<string, string> = {
+    apikey: SERVICE_ROLE_KEY,
+    Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+    "Content-Type": "application/json",
+    ...init.headers,
+  };
 
-    return this.client;
+  const response = await fetch(url, {
+    ...init,
+    headers,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    logger.error("Supabase REST error", {
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      body: text,
+    });
+    throw new AppError(500, "Database request failed. Please try again later.");
   }
 
-  /**
-   * Health check for database connection
-   */
-  async healthCheck(): Promise<boolean> {
-    try {
-      const client = this.getClient();
-      // Simple query to check connection
-      const { error } = await client.from("users").select("id").limit(1);
-      return !error;
-    } catch (error) {
-      logger.error("Database health check failed", error);
-      return false;
-    }
+  // Some operations (DELETE, some INSERT/UPDATE without return=representation)
+  // may return no content, which would cause response.json() to throw.
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const rawText = await response.text();
+  if (!rawText) {
+    // No body to parse
+    return undefined as T;
+  }
+
+  try {
+    return JSON.parse(rawText) as T;
+  } catch (error) {
+    logger.error("Failed to parse Supabase REST JSON response", {
+      url,
+      rawText,
+      error,
+    });
+    throw new AppError(
+      500,
+      "Invalid response from database. Please try again later."
+    );
   }
 }
 
-export const dbClient = new DatabaseClient();
-export const getSupabaseClient = () => dbClient.getClient();
+/**
+ * Simple health check using a lightweight REST query.
+ */
+export async function healthCheck(): Promise<boolean> {
+  try {
+    await supabaseFetch<unknown>("/users?select=id&limit=1", {
+      method: "GET",
+    });
+    return true;
+  } catch (error) {
+    logger.error("Database health check failed", error);
+    return false;
+  }
+}
