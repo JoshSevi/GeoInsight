@@ -173,6 +173,43 @@ npm run dev
 
 The server will start on `http://localhost:8000`
 
+## Production / Vercel Deployment Notes
+
+This backend is designed to run as a single Vercel serverless function that serves all `/api/*` routes.
+
+- **Entry point**: `backend/api/index.ts` (creates and reuses the shared Express app from `src/app.ts`)
+- **Vercel config**: `backend/vercel.json`:
+
+  - Builds `api/index.ts` with `@vercel/node`
+  - Routes all `/api/(.*)` requests to that handler
+
+### Required Vercel project settings (backend)
+
+- **Root directory**: `backend`
+- **Build command**: `npm run build`
+- **Install command**: `npm install`
+
+### Required environment variables (backend on Vercel)
+
+Set these in the Vercel dashboard for the backend project (do **not** rely on `.env` in production):
+
+```text
+NODE_ENV=production
+JWT_SECRET=<strong-secret>
+JWT_EXPIRES_IN=7d
+SUPABASE_URL=<your-supabase-url>
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-key>
+IPINFO_TOKEN=<optional>
+IPINFO_BASE_URL=https://ipinfo.io
+
+# IMPORTANT: must include protocol and no trailing slash
+CORS_ORIGIN=https://geo-insight-frontend.vercel.app
+```
+
+Once deployed, you should be able to verify the API health at:
+
+- `https://<your-backend>.vercel.app/api/health`
+
 ## API Endpoints
 
 ### POST /api/login
