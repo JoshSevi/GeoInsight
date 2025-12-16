@@ -120,7 +120,11 @@ GeoInsight/
 ## 🌐 API Endpoints
 
 - `POST /api/login` - User authentication
+- `POST /api/signup` - User registration
 - `GET /api/geo` - Get IP geolocation information (current user or specified IP)
+- `GET /api/history` - Get user's search history (requires authentication)
+- `POST /api/history` - Save IP to search history (requires authentication)
+- `DELETE /api/history` - Delete search history items (requires authentication)
 - `GET /api/health` - Health check
 
 See [Backend README](./backend/README.md#api-endpoints) for detailed API documentation.

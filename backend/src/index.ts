@@ -5,6 +5,7 @@ import cors from "cors";
 import { config } from "./config/index.js";
 import { logger } from "./utils/logger.js";
 import { errorHandler, notFoundHandler } from "./middleware/index.js";
+import { apiLimiter } from "./middleware/rateLimiter.js";
 import { registerRoutes } from "./routes/index.js";
 import { dbClient } from "./database/client.js";
 
@@ -24,6 +25,10 @@ function createApp(): express.Application {
     })
   );
   app.use(express.json());
+
+  // Apply general API rate limiting to all /api routes
+  // (Specific routes may have stricter limits)
+  app.use("/api", apiLimiter);
 
   // Request logging middleware (development only)
   if (config.nodeEnv === "development") {

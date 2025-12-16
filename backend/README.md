@@ -80,6 +80,7 @@ backend/
 - **cors** (^2.8.5) - Cross-Origin Resource Sharing middleware
 - **dotenv** (^16.3.1) - Environment variable loader
 - **express** (^4.18.2) - Web framework for Node.js
+- **express-rate-limit** - Rate limiting middleware to prevent API abuse
 - **jsonwebtoken** (^9.0.3) - JWT token generation and verification
 
 ### Development Dependencies
@@ -445,3 +446,8 @@ Structured logging with different levels:
 - Row Level Security (RLS) is enabled on the users table
 - Environment variables are validated on startup
 - Error messages are sanitized in production mode
+- **Rate limiting** is implemented to prevent API abuse:
+  - Authentication endpoints (login/signup): 5 requests per 1 minute per IP (strict protection against brute force)
+  - Geolocation endpoints: 30 requests per 5 minutes per IP
+  - General API endpoints: 100 requests per 5 minutes per IP
+  - All rate limit violations are logged for security monitoring
