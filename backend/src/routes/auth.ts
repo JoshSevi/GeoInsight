@@ -5,10 +5,17 @@ import { createClient } from "@supabase/supabase-js";
 
 const router = express.Router();
 
-// Supabase client
-const supabaseUrl = process.env.SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Get Supabase client (lazy initialization)
+function getSupabaseClient() {
+  const supabaseUrl = process.env.SUPABASE_URL || "";
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error("Supabase credentials are not configured. Please check your .env file.");
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
 const JWT_SECRET =
   process.env.JWT_SECRET || "your-secret-key-change-in-production";
@@ -27,6 +34,7 @@ router.post("/login", async (req, res) => {
     }
 
     // Find user by email
+    const supabase = getSupabaseClient();
     const { data: user, error: fetchError } = await supabase
       .from("users")
       .select("*")
