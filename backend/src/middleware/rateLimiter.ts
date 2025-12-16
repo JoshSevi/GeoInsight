@@ -5,10 +5,10 @@ import { logger } from "../utils/logger.js";
 
 /**
  * General API rate limiter
- * Limits: 100 requests per 5 minutes per IP
+ * Limits: 300 requests per 1 minute per IP
  */
 export const apiLimiter = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutes
+  windowMs: 1 * 60 * 1000, // 1 minute
   max: 100, // Limit each IP to 100 requests per windowMs
   message: {
     success: false,
@@ -66,12 +66,12 @@ export const authLimiter = rateLimit({
 
 /**
  * Geo API rate limiter
- * Limits: 30 requests per 5 minutes per IP
+ * Limits: 50 requests per 5 minutes per IP
  * Prevents abuse of geolocation API
  */
 export const geoLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
-  max: 30, // Limit each IP to 30 geo requests per windowMs
+  max: 50, // Limit each IP to 30 geo requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
   skip: () => config.nodeEnv === "test",
