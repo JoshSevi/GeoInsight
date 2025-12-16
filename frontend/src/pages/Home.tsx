@@ -111,10 +111,22 @@ export default function Home() {
 
         {/* Welcome Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <p className="text-gray-600">
-            Welcome,{" "}
-            <span className="font-semibold text-gray-900">{user?.email}</span>
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Logged in as</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {user?.email}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-gray-500 mb-1">Your IP Address</p>
+              {currentUserIP && (
+                <p className="text-lg font-mono font-semibold text-indigo-600">
+                  {currentUserIP}
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* IP Search Section */}
@@ -137,9 +149,7 @@ export default function Home() {
                   }}
                   placeholder="Enter IP address (e.g., 8.8.8.8)"
                   className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
-                    ipError
-                      ? "border-red-300 bg-red-50"
-                      : "border-gray-300"
+                    ipError ? "border-red-300 bg-red-50" : "border-gray-300"
                   }`}
                   disabled={loading || isSearching}
                 />
@@ -170,19 +180,9 @@ export default function Home() {
 
         {/* IP & Geolocation Information */}
         <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">
-              IP & Geolocation Information
-            </h2>
-            {currentUserIP && geoData?.ip !== currentUserIP && (
-              <button
-                onClick={fetchCurrentUserGeo}
-                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-              >
-                Show My IP
-              </button>
-            )}
-          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            IP & Geolocation Information
+          </h2>
 
           {(loading || isSearching) && (
             <div className="flex items-center justify-center py-8">
