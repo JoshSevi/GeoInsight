@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { getGeo, GeoResponse } from '../lib/api';
+import { useEffect, useState, FormEvent } from "react";
+import { useAuth } from "../context/AuthContext";
+import { getGeo, GeoResponse } from "../lib/api";
+import { isValidIP } from "../utils/ipValidator";
 
 export default function Home() {
   const { user, logout } = useAuth();
-  const [geoData, setGeoData] = useState<GeoResponse['data'] | null>(null);
+  const [geoData, setGeoData] = useState<GeoResponse["data"] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [ipInput, setIpInput] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [currentUserIP, setCurrentUserIP] = useState<string | null>(null);
 
   // Fetch current user's IP geolocation on mount
   useEffect(() => {
@@ -16,17 +20,57 @@ export default function Home() {
   const fetchCurrentUserGeo = async () => {
     setLoading(true);
     setError(null);
+    setIpInput(""); // Clear input when fetching current user's IP
     try {
       const response = await getGeo(); // No IP parameter = current user's IP
       if (response.success && response.data) {
         setGeoData(response.data);
+        setCurrentUserIP(response.data.ip); // Store current user's IP
       } else {
-        setError(response.message || 'Failed to fetch geolocation');
+        setError(response.message || "Failed to fetch geolocation");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch geolocation');
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch geolocation"
+      );
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearch = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const trimmedIP = ipInput.trim();
+
+    if (!trimmedIP) {
+      setError("Please enter an IP address");
+      return;
+    }
+
+    // Validate IP format
+    if (!isValidIP(trimmedIP)) {
+      setError(
+        "Invalid IP address format. Please enter a valid IPv4 or IPv6 address."
+      );
+      return;
+    }
+
+    setIsSearching(true);
+    setError(null);
+
+    try {
+      const response = await getGeo(trimmedIP);
+      if (response.success && response.data) {
+        setGeoData(response.data);
+      } else {
+        setError(response.message || "Failed to fetch geolocation");
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch geolocation"
+      );
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -47,18 +91,59 @@ export default function Home() {
         {/* Welcome Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <p className="text-gray-600">
-            Welcome, <span className="font-semibold text-gray-900">{user?.email}</span>
+            Welcome,{" "}
+            <span className="font-semibold text-gray-900">{user?.email}</span>
           </p>
+        </div>
+
+        {/* IP Search Section */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">
+            Search IP Address
+          </h2>
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <input
+              type="text"
+              value={ipInput}
+              onChange={(e) => setIpInput(e.target.value)}
+              placeholder="Enter IP address (e.g., 8.8.8.8)"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              disabled={loading || isSearching}
+            />
+            <button
+              type="submit"
+              disabled={loading || isSearching}
+              className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSearching ? "Searching..." : "Search"}
+            </button>
+          </form>
         </div>
 
         {/* IP & Geolocation Information */}
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Your IP & Geolocation</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">
+              IP & Geolocation Information
+            </h2>
+            {currentUserIP && geoData?.ip !== currentUserIP && (
+              <button
+                onClick={fetchCurrentUserGeo}
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Show My IP
+              </button>
+            )}
+          </div>
 
-          {loading && (
+          {(loading || isSearching) && (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-              <span className="ml-3 text-gray-600">Loading geolocation data...</span>
+              <span className="ml-3 text-gray-600">
+                {isSearching
+                  ? "Searching geolocation data..."
+                  : "Loading geolocation data..."}
+              </span>
             </div>
           )}
 
@@ -68,11 +153,13 @@ export default function Home() {
             </div>
           )}
 
-          {!loading && !error && geoData && (
+          {!loading && !isSearching && !error && geoData && (
             <div className="space-y-4">
               {/* IP Address */}
               <div className="border-b pb-4">
-                <label className="block text-sm font-medium text-gray-500 mb-1">IP Address</label>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  IP Address
+                </label>
                 <p className="text-xl font-mono text-gray-900">{geoData.ip}</p>
               </div>
 
@@ -80,43 +167,57 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {geoData.city && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">City</label>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                      City
+                    </label>
                     <p className="text-lg text-gray-900">{geoData.city}</p>
                   </div>
                 )}
 
                 {geoData.region && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Region</label>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                      Region
+                    </label>
                     <p className="text-lg text-gray-900">{geoData.region}</p>
                   </div>
                 )}
 
                 {geoData.country && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Country</label>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                      Country
+                    </label>
                     <p className="text-lg text-gray-900">{geoData.country}</p>
                   </div>
                 )}
 
                 {geoData.postal && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Postal Code</label>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                      Postal Code
+                    </label>
                     <p className="text-lg text-gray-900">{geoData.postal}</p>
                   </div>
                 )}
 
                 {geoData.timezone && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Timezone</label>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                      Timezone
+                    </label>
                     <p className="text-lg text-gray-900">{geoData.timezone}</p>
                   </div>
                 )}
 
                 {geoData.loc && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-500 mb-1">Coordinates</label>
-                    <p className="text-lg text-gray-900 font-mono">{geoData.loc}</p>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                      Coordinates
+                    </label>
+                    <p className="text-lg text-gray-900 font-mono">
+                      {geoData.loc}
+                    </p>
                   </div>
                 )}
               </div>
@@ -127,4 +228,3 @@ export default function Home() {
     </div>
   );
 }
-
